@@ -68,6 +68,19 @@ export class User {
   @Column({ nullable: true })
   pincode: string;
 
+  // Region Admin specific fields
+  @Column({ nullable: true })
+  regionName: string;
+
+  @Column({ nullable: true })
+  regionCode: string;
+
+  @Column({ nullable: true })
+  country: string;
+
+  @Column({ nullable: true })
+  utility: string;
+
   @Column({ nullable: true })
   propertyType: string;
 
