@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    container_name: solar_postgres
+    environment:
+      POSTGRES_USER: solar_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: solar_platform
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
