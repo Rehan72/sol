@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Sun, 
-  MapPin, 
-  Zap, 
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Sun,
+  MapPin,
+  Zap,
   Calendar,
   Building2,
   User,
@@ -33,9 +33,13 @@ import {
   Factory,
   List,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { createPlant, getPlantById, updatePlant } from '../../api/plant';
+import { getAllRegionAdmins } from '../../api/regionAdmin';
+import Toaster from '../../components/ui/Toaster';
 import { Button } from '../../components/ui/button';
 import LocationPicker from '../../components/ui/LocationPicker';
 import Select from '../../components/ui/Select';
@@ -49,11 +53,7 @@ const STATUS_OPTIONS = [
   { value: 'maintenance', label: 'Maintenance' }
 ];
 
-const REGION_ADMIN_OPTIONS = [
-  { value: 'RA-001', label: 'Robert Fox (North Region)' },
-  { value: 'RA-002', label: 'Arlene McCoy (West Region)' },
-  { value: 'RA-003', label: 'Eleanor Pena (South Region)' },
-];
+// Region admin options will be loaded from API
 
 const VOLTAGE_OPTIONS = [
   { value: 'lt', label: 'LT (415V)' },
@@ -97,9 +97,15 @@ const TABS = [
 function CreatePlant() {
   const navigate = useNavigate();
   const location = useLocation();
+  const plantId = location.state?.plantId; // Get ID from navigation state
   const [activeTab, setActiveTab] = React.useState('identity');
   const [showAdvanced, setShowAdvanced] = React.useState(false);
-  
+  const [regionAdminOptions, setRegionAdminOptions] = React.useState([]);
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
   const [formData, setFormData] = React.useState({
     // 1. Plant Identity
     plantName: '',
@@ -108,7 +114,7 @@ function CreatePlant() {
     capacity: '',
     status: 'draft',
     regionAdminId: '',
-    
+
     // 2. Location & Grid Info
     location: '',
     latitude: '',
@@ -137,7 +143,7 @@ function CreatePlant() {
     solarIrradiance: false,
     ambientTemp: false,
     moduleTemp: false,
-    
+
     // 5. Connectivity
     dataProtocol: 'modbus_tcp',
     loggerId: '',
@@ -148,21 +154,117 @@ function CreatePlant() {
     antiIslanding: true,
     protectionEnabled: true,
     curtailmentAllowed: 'no',
-    
+
     // 7. Access
     ownerName: '',
     ownerPhone: '',
     ownerEmail: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const [errors, setErrors] = React.useState({});
   const [touched, setTouched] = React.useState({});
+  const [toasts, setToasts] = React.useState([]);
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   React.useEffect(() => {
     if (location.state?.adminId) {
-        setFormData(prev => ({ ...prev, regionAdminId: location.state.adminId }));
+      setFormData(prev => ({ ...prev, regionAdminId: location.state.adminId }));
     }
   }, [location.state]);
+
+  // Fetch region admins on mount
+  React.useEffect(() => {
+    const fetchRegionAdmins = async () => {
+      try {
+        const admins = await getAllRegionAdmins();
+        const options = admins.map(admin => ({
+          value: admin.id,
+          label: `${admin.name} (${admin.regionName || 'No Region'})`
+        }));
+        setRegionAdminOptions(options);
+      } catch (error) {
+        console.error('Error fetching region admins:', error);
+        addToast('Failed to load region admins', 'error');
+      }
+    };
+    fetchRegionAdmins();
+  }, []);
+
+  // Fetch plant data if in edit mode
+  React.useEffect(() => {
+    if (plantId) {
+      setIsEditMode(true);
+      fetchPlantData();
+    }
+  }, [plantId]);
+
+  const fetchPlantData = async () => {
+    try {
+      setIsLoading(true);
+      const plant = await getPlantById(plantId);
+
+      // Pre-populate form with plant data
+      setFormData({
+        plantName: plant.plantName || '',
+        plantCode: plant.plantCode || '',
+        plantType: plant.plantType || 'grid_connected',
+        capacity: plant.capacity || '',
+        status: plant.status || 'draft',
+        regionAdminId: plant.regionAdminId || '',
+        location: plant.location || '',
+        latitude: plant.latitude || '',
+        longitude: plant.longitude || '',
+        country: plant.country || '',
+        state: plant.state || '',
+        city: plant.city || '',
+        utilityName: plant.utilityName || '',
+        gridVoltage: plant.gridVoltage || '',
+        netMetering: plant.netMetering || 'yes',
+        connectionDate: plant.connectionDate || '',
+        inverterType: plant.inverterType || 'string',
+        inverterMake: plant.inverterMake || '',
+        inverterCount: plant.inverterCount || '',
+        inverterRatedPower: plant.inverterRatedPower || '',
+        transformerPresent: plant.transformerPresent || 'no',
+        transformerRating: plant.transformerRating || '',
+        transformerCapacity: plant.transformerCapacity || '',
+        meterType: plant.meterType || 'bi_directional',
+        meterMake: plant.meterMake || '',
+        meterProtocol: plant.meterProtocol || 'modbus_rtu',
+        solarIrradiance: plant.solarIrradiance || false,
+        ambientTemp: plant.ambientTemp || false,
+        moduleTemp: plant.moduleTemp || false,
+        dataProtocol: plant.dataProtocol || 'modbus_tcp',
+        loggerId: plant.loggerId || '',
+        internetType: plant.internetType || '4g',
+        dataPushInterval: plant.dataPushInterval || '15',
+        antiIslanding: plant.antiIslanding ?? true,
+        protectionEnabled: plant.protectionEnabled ?? true,
+        curtailmentAllowed: plant.curtailmentAllowed || 'no',
+        ownerName: plant.ownerName || '',
+        ownerPhone: plant.ownerPhone || '',
+        ownerEmail: plant.ownerEmail || '',
+        password: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      console.error('Error fetching plant:', error);
+      addToast('Failed to load plant data', 'error');
+      navigate('/grid-plant');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Validation rules (Same as before)
   const validateField = (name, value) => {
@@ -179,7 +281,7 @@ function CreatePlant() {
         if (!value) return 'Capacity is required';
         if (parseFloat(value) <= 0) return 'Capacity must be greater than 0';
         return '';
-      
+
       // Location
       case 'location':
         if (!value.trim()) return 'Location is required';
@@ -188,7 +290,7 @@ function CreatePlant() {
       case 'longitude':
         if (!value) return 'Coordinates are required';
         return '';
-      
+
       // Contact
       case 'ownerName':
         if (!value.trim()) return 'Owner name is required';
@@ -199,7 +301,17 @@ function CreatePlant() {
       case 'ownerEmail':
         if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email';
         return '';
-        
+
+      case 'password':
+        if (!value.trim()) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return '';
+
+      case 'confirmPassword':
+        if (!value.trim()) return 'Please confirm password';
+        if (value !== formData.password) return 'Passwords do not match';
+        return '';
+
       default:
         return '';
     }
@@ -207,12 +319,12 @@ function CreatePlant() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // If state changes, reset city
     if (name === 'state') {
-        setFormData(prev => ({ ...prev, state: value, city: '' }));
+      setFormData(prev => ({ ...prev, state: value, city: '' }));
     } else {
-        setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
 
     if (touched[name]) {
@@ -254,23 +366,75 @@ function CreatePlant() {
       const error = validateField(key, formData[key]);
       if (error) newErrors[key] = error;
     });
-    
+
     setErrors(newErrors);
     setTouched(Object.keys(formData).reduce((acc, key) => ({ ...acc, [key]: true }), {}));
-    
+
     if (Object.keys(newErrors).length === 0) {
-      console.log('Form submitted:', formData);
-      navigate('/grid-plant');
+      try {
+        console.log('Submitting plant data:', formData);
+
+        // Transform data to match backend DTO expectations
+        const payload = {
+          ...formData,
+          // Convert string numbers to actual numbers
+          capacity: formData.capacity ? parseFloat(formData.capacity) : undefined,
+          latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+          inverterCount: formData.inverterCount ? parseInt(formData.inverterCount) : undefined,
+          inverterRatedPower: formData.inverterRatedPower ? parseFloat(formData.inverterRatedPower) : undefined,
+          transformerCapacity: formData.transformerCapacity ? parseFloat(formData.transformerCapacity) : undefined,
+          // Ensure date is in proper format or undefined
+          connectionDate: formData.connectionDate || undefined,
+        };
+
+        // Remove password fields from payload if in edit mode
+        if (isEditMode) {
+          delete payload.password;
+          delete payload.confirmPassword;
+        }
+
+        console.log('Transformed payload:', payload);
+
+        if (isEditMode) {
+          await updatePlant(plantId, payload);
+          addToast('Plant updated successfully!', 'success');
+        } else {
+          await createPlant(payload);
+          addToast('Plant created successfully!', 'success');
+        }
+
+        setTimeout(() => {
+          navigate('/grid-plant');
+        }, 1000);
+      } catch (error) {
+        console.error('Error saving plant:', error);
+        const responseData = error.response?.data;
+
+        if (responseData?.errors && Array.isArray(responseData.errors)) {
+          addToast(`Validation failed:\n${responseData.errors.join('\n')}`, 'error');
+        } else if (responseData?.message) {
+          addToast(responseData.message, 'error');
+        } else {
+          addToast(`Failed to ${isEditMode ? 'update' : 'create'} plant. Please try again.`, 'error');
+        }
+      }
+    } else {
+      // Show first validation error
+      const firstError = Object.values(newErrors)[0];
+      if (firstError) {
+        addToast(firstError, 'error');
+      }
     }
   };
 
   // Render content based on active tab
   const renderContent = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'identity':
         return (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField name="plantName" label="Grid Name" required touched={touched} errors={errors}>
                 <div className="relative">
                   <Building2 className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
@@ -291,7 +455,7 @@ function CreatePlant() {
                   label="Region Admin"
                   value={formData.regionAdminId}
                   onChange={handleChange}
-                  options={REGION_ADMIN_OPTIONS}
+                  options={regionAdminOptions}
                   icon={User}
                   placeholder="Select Region Admin"
                   error={touched.regionAdminId && errors.regionAdminId}
@@ -329,7 +493,7 @@ function CreatePlant() {
       case 'location':
         return (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <LocationPicker
                   value={{
@@ -366,7 +530,7 @@ function CreatePlant() {
                 />
               </div>
 
-               <div className="relative">
+              <div className="relative">
                 <Select
                   name="city"
                   label="City"
@@ -403,7 +567,7 @@ function CreatePlant() {
               <FormField name="connectionDate" label="Grid Connection Date" touched={touched} errors={errors}>
                 <div className="relative">
                   <Calendar className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
-                  <DateTimePicker 
+                  <DateTimePicker
                     mode="single"
                     placeholder="Select Connection Date"
                     value={formData.connectionDate ? new Date(formData.connectionDate) : null}
@@ -453,7 +617,7 @@ function CreatePlant() {
 
               <div className="md:col-span-2 pt-4 border-t border-white/10">
                 <label className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white/80 mb-4 cursor-pointer">
-                  <input type="checkbox" checked={formData.transformerPresent === 'yes'} onChange={(e) => setFormData({...formData, transformerPresent: e.target.checked ? 'yes' : 'no'})} className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-solar-yellow checked:border-solar-yellow" />
+                  <input type="checkbox" checked={formData.transformerPresent === 'yes'} onChange={(e) => setFormData({ ...formData, transformerPresent: e.target.checked ? 'yes' : 'no' })} className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-solar-yellow checked:border-solar-yellow" />
                   Transformer Present?
                 </label>
               </div>
@@ -478,7 +642,7 @@ function CreatePlant() {
           </div>
         );
       case 'connectivity':
-         return (
+        return (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative">
@@ -525,54 +689,54 @@ function CreatePlant() {
 
               {/* Advanced Connectivity Settings */}
               <div className="md:col-span-2 border-t border-white/10 pt-4">
-                 <button 
-                   type="button" 
-                   onClick={() => setShowAdvanced(!showAdvanced)}
-                   className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-solar-yellow hover:text-white transition-colors mb-4"
-                 >
-                   Advanced Configuration
-                   <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-solar-yellow hover:text-white transition-colors mb-4"
+                >
+                  Advanced Configuration
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                </button>
 
-                 <AnimatePresence>
-                   {showAdvanced && (
-                     <motion.div
-                       initial={{ height: 0, opacity: 0 }}
-                       animate={{ height: 'auto', opacity: 1 }}
-                       exit={{ height: 0, opacity: 0 }}
-                       className="overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-6"
-                     >
-                        <FormField name="loggerId" label="Data Logger Serial ID" touched={touched} errors={errors}>
-                          <div className="relative">
-                            <List className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
-                            <input type="text" name="loggerId" value={formData.loggerId} onChange={handleChange} placeholder="e.g., DLOG-X99" className={getInputClassName('loggerId', touched, errors)} />
-                          </div>
-                        </FormField>
+                <AnimatePresence>
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-6"
+                    >
+                      <FormField name="loggerId" label="Data Logger Serial ID" touched={touched} errors={errors}>
+                        <div className="relative">
+                          <List className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
+                          <input type="text" name="loggerId" value={formData.loggerId} onChange={handleChange} placeholder="e.g., DLOG-X99" className={getInputClassName('loggerId', touched, errors)} />
+                        </div>
+                      </FormField>
 
-                        <FormField name="dataPushInterval" label="Data Push Interval (Mins)" touched={touched} errors={errors}>
-                          <div className="relative">
-                            <Clock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
-                            <input type="number" name="dataPushInterval" value={formData.dataPushInterval} onChange={handleChange} className={getInputClassName('dataPushInterval', touched, errors)} />
-                          </div>
-                        </FormField>
-                     </motion.div>
-                   )}
-                 </AnimatePresence>
+                      <FormField name="dataPushInterval" label="Data Push Interval (Mins)" touched={touched} errors={errors}>
+                        <div className="relative">
+                          <Clock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30`} />
+                          <input type="number" name="dataPushInterval" value={formData.dataPushInterval} onChange={handleChange} className={getInputClassName('dataPushInterval', touched, errors)} />
+                        </div>
+                      </FormField>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="md:col-span-2 pt-4 border-t border-white/10">
-                 <label className="block text-xs font-bold uppercase tracking-widest mb-4 text-white/60">Installed Sensors</label>
-                 <div className="flex flex-wrap gap-6">
-                    {['solarIrradiance', 'ambientTemp', 'moduleTemp'].map((sensor) => (
-                      <label key={sensor} className="flex items-center gap-3 cursor-pointer group">
-                        <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${formData[sensor] ? 'bg-solar-yellow border-solar-yellow' : 'bg-white/5 border-white/20 group-hover:border-white/40'}`}>
-                           {formData[sensor] && <CheckCircle2 className="w-4 h-4 text-deep-navy" />}
-                        </div>
-                        <input type="checkbox" checked={formData[sensor]} onChange={(e) => setFormData({...formData, [sensor]: e.target.checked})} className="hidden" />
-                        <span className="text-sm text-white/80 group-hover:text-white transition-colors capitalize">{sensor.replace(/([A-Z])/g, ' $1')}</span>
-                      </label>
-                    ))}
-                 </div>
+                <label className="block text-xs font-bold uppercase tracking-widest mb-4 text-white/60">Installed Sensors</label>
+                <div className="flex flex-wrap gap-6">
+                  {['solarIrradiance', 'ambientTemp', 'moduleTemp'].map((sensor) => (
+                    <label key={sensor} className="flex items-center gap-3 cursor-pointer group">
+                      <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${formData[sensor] ? 'bg-solar-yellow border-solar-yellow' : 'bg-white/5 border-white/20 group-hover:border-white/40'}`}>
+                        {formData[sensor] && <CheckCircle2 className="w-4 h-4 text-deep-navy" />}
+                      </div>
+                      <input type="checkbox" checked={formData[sensor]} onChange={(e) => setFormData({ ...formData, [sensor]: e.target.checked })} className="hidden" />
+                      <span className="text-sm text-white/80 group-hover:text-white transition-colors capitalize">{sensor.replace(/([A-Z])/g, ' $1')}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -580,48 +744,96 @@ function CreatePlant() {
       case 'safety':
         return (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                 <div className="glass p-4 rounded-xl flex items-center justify-between">
-                    <span className="text-sm font-bold">Anti-Islanding</span>
-                    <div className="flex items-center gap-2 text-green-400 text-xs font-black uppercase tracking-wider">
-                      <CheckCircle2 className="w-4 h-4" /> Enabled
-                    </div>
-                 </div>
-                 <div className="glass p-4 rounded-xl flex items-center justify-between">
-                    <span className="text-sm font-bold">Protection</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={formData.protectionEnabled} onChange={(e) => setFormData({...formData, protectionEnabled: e.target.checked})} className="sr-only peer" />
-                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-solar-yellow"></div>
-                    </label>
-                 </div>
-                 <div className="glass p-4 rounded-xl flex items-center justify-between">
-                    <span className="text-sm font-bold">Remote Curtailment</span>
-                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={formData.curtailmentAllowed === 'yes'} onChange={(e) => setFormData({...formData, curtailmentAllowed: e.target.checked ? 'yes' : 'no'})} className="sr-only peer" />
-                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-solar-yellow"></div>
-                    </label>
-                 </div>
+                <div className="glass p-4 rounded-xl flex items-center justify-between">
+                  <span className="text-sm font-bold">Anti-Islanding</span>
+                  <div className="flex items-center gap-2 text-green-400 text-xs font-black uppercase tracking-wider">
+                    <CheckCircle2 className="w-4 h-4" /> Enabled
+                  </div>
+                </div>
+                <div className="glass p-4 rounded-xl flex items-center justify-between">
+                  <span className="text-sm font-bold">Protection</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={formData.protectionEnabled} onChange={(e) => setFormData({ ...formData, protectionEnabled: e.target.checked })} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-solar-yellow"></div>
+                  </label>
+                </div>
+                <div className="glass p-4 rounded-xl flex items-center justify-between">
+                  <span className="text-sm font-bold">Remote Curtailment</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={formData.curtailmentAllowed === 'yes'} onChange={(e) => setFormData({ ...formData, curtailmentAllowed: e.target.checked ? 'yes' : 'no' })} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-solar-yellow"></div>
+                  </label>
+                </div>
               </div>
 
-               <FormField name="ownerName" label="Owner Name" required touched={touched} errors={errors}>
-                 <div className="relative">
-                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                   <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} className={getInputClassName('ownerName', touched, errors)} />
-                 </div>
-               </FormField>
-               <FormField name="ownerPhone" label="Owner Phone" required touched={touched} errors={errors}>
-                 <div className="relative">
-                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                   <input type="tel" name="ownerPhone" value={formData.ownerPhone} onChange={handleChange} className={getInputClassName('ownerPhone', touched, errors)} />
-                 </div>
-               </FormField>
-               <FormField name="ownerEmail" label="Owner Email" touched={touched} errors={errors}>
-                 <div className="relative">
-                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-                   <input type="email" name="ownerEmail" value={formData.ownerEmail} onChange={handleChange} className={getInputClassName('ownerEmail', touched, errors)} />
-                 </div>
-               </FormField>
+              <FormField name="ownerName" label="Owner Name" required touched={touched} errors={errors}>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} className={getInputClassName('ownerName', touched, errors)} />
+                </div>
+              </FormField>
+              <FormField name="ownerPhone" label="Owner Phone" required touched={touched} errors={errors}>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input type="tel" name="ownerPhone" value={formData.ownerPhone} onChange={handleChange} className={getInputClassName('ownerPhone', touched, errors)} />
+                </div>
+              </FormField>
+              <FormField name="ownerEmail" label="Owner Email" touched={touched} errors={errors}>
+                <div className="relative">
+                  <input type="email" name="ownerEmail" value={formData.ownerEmail} onChange={handleChange} className={getInputClassName('ownerEmail', touched, errors)} />
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 pointer-events-none" />
+                </div>
+              </FormField>
+
+              <FormField name="password" label="Password" required touched={touched} errors={errors}>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Create a strong password"
+                    className={getInputClassName('password', touched, errors)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </FormField>
+
+              <FormField name="confirmPassword" label="Confirm Password" required touched={touched} errors={errors}>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    className={getInputClassName('confirmPassword', touched, errors)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </FormField>
+            </div>
+
+            {/* Control and Safety Section */}
+            <div className="space-y-6 mb-8">
+              <h3 className="text-lg font-bold text-solar-yellow flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5" />
+                Control & Protection
+              </h3>
             </div>
           </div>
         );
@@ -641,107 +853,107 @@ function CreatePlant() {
       <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" onClick={() => navigate('/grid-plant')} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent">
-                <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                    <ArrowLeft className="w-5 h-5 text-solar-yellow" />
-                </div>
-                <span className="text-sm text-solar-yellow font-bold uppercase tracking-widest">Back to Grids</span>
-            </Button>
-            <h1 className="text-2xl font-black uppercase rim-light tracking-tighter">
-                Create <span className="text-solar-yellow">Grid</span>
-            </h1>
+          <Button variant="ghost" onClick={() => navigate('/grid-plant')} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent">
+            <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-solar-yellow" />
+            </div>
+            <span className="text-sm text-solar-yellow font-bold uppercase tracking-widest">Back to Grids</span>
+          </Button>
+          <h1 className="text-2xl font-black uppercase rim-light tracking-tighter">
+            {isEditMode ? 'Edit' : 'Create'} <span className="text-solar-yellow">Grid</span>
+          </h1>
         </div>
 
         <div className="mx-auto">
-            {/* Horizontal Tabs */}
-            <div className="mb-8 overflow-x-auto pb-2">
-                <nav className="flex items-center gap-2 min-w-max border-b border-white/10">
-                    {TABS.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`relative px-6 py-4 flex items-center gap-3 transition-colors group ${
-                                activeTab === tab.id 
-                                ? 'text-solar-yellow' 
-                                : 'text-white/40 hover:text-white'
-                            }`}
-                        >
-                            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-solar-yellow' : 'text-current'}`} />
-                            <span className="font-bold uppercase tracking-wider text-sm whitespace-nowrap">{tab.label}</span>
-                            
-                            {activeTab === tab.id && (
-                                <motion.div 
-                                    layoutId="activeTab"
-                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-solar-yellow shadow-[0_0_10px_rgba(255,215,0,0.5)]"
-                                    initial={false}
-                                />
-                            )}
-                        </button>
-                    ))}
-                </nav>
-            </div>
-
-            {/* Main Form Area */}
-            <div>
-                <div className="mb-6">
-                    <h2 className="text-2xl font-black uppercase tracking-wider">
-                        {TABS.find(t => t.id === activeTab)?.label}
-                    </h2>
-                    <p className="text-white/40">
-                         {TABS.find(t => t.id === activeTab)?.description}
-                    </p>
-                </div>
-                <motion.form
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    onSubmit={handleSubmit}
-                    className="glass rounded-3xl p-8 md:p-12 min-h-[600px] flex flex-col justify-between"
+          {/* Horizontal Tabs */}
+          <div className="mb-8 overflow-x-auto pb-2">
+            <nav className="flex items-center gap-2 min-w-max border-b border-white/10">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative px-6 py-4 flex items-center gap-3 transition-colors group ${activeTab === tab.id
+                    ? 'text-solar-yellow'
+                    : 'text-white/40 hover:text-white'
+                    }`}
                 >
+                  <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-solar-yellow' : 'text-current'}`} />
+                  <span className="font-bold uppercase tracking-wider text-sm whitespace-nowrap">{tab.label}</span>
 
+                  {activeTab === tab.id && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-solar-yellow shadow-[0_0_10px_rgba(255,215,0,0.5)]"
+                      initial={false}
+                    />
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-                    <div className="flex-1">
-                        {renderContent()}
-                    </div>
-
-                    <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
-                        <p className="text-xs text-white/30 hidden sm:block">
-                            Step {TABS.findIndex(t => t.id === activeTab) + 1} of {TABS.length}
-                        </p>
-                        <div className="flex gap-4 ml-auto">
-                            {activeTab !== 'identity' && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => {
-                                         const currentIndex = TABS.findIndex(t => t.id === activeTab);
-                                         if (currentIndex > 0) setActiveTab(TABS[currentIndex - 1].id);
-                                    }}
-                                    className="px-8 text-white/60 hover:text-white"
-                                >
-                                    Back
-                                </Button>
-                            )}
-                            {activeTab !== 'safety' ? (
-                                <Button 
-                                    type="button" 
-                                    onClick={handleNext}
-                                    className="bg-solar-yellow text-deep-navy font-bold hover:bg-solar-gold px-8"
-                                >
-                                    Continue <ChevronRight className="w-4 h-4 ml-2" />
-                                </Button>
-                            ) : (
-                                <Button 
-                                    type="submit" 
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                                >
-                                    Complete Registration <CheckCircle2 className="w-4 h-4 ml-2" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </motion.form>
+          {/* Main Form Area */}
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-wider">
+                {TABS.find(t => t.id === activeTab)?.label}
+              </h2>
+              <p className="text-white/40">
+                {TABS.find(t => t.id === activeTab)?.description}
+              </p>
             </div>
+            <motion.form
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              onSubmit={handleSubmit}
+              className="glass rounded-3xl p-8 md:p-12 min-h-[600px] flex flex-col justify-between"
+            >
+
+
+              <div className="flex-1">
+                {renderContent()}
+              </div>
+
+              <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
+                <p className="text-xs text-white/30 hidden sm:block">
+                  Step {TABS.findIndex(t => t.id === activeTab) + 1} of {TABS.length}
+                </p>
+                <div className="flex gap-4 ml-auto">
+                  {activeTab !== 'identity' && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        const currentIndex = TABS.findIndex(t => t.id === activeTab);
+                        if (currentIndex > 0) setActiveTab(TABS[currentIndex - 1].id);
+                      }}
+                      className="px-8 text-white/60 hover:text-white"
+                    >
+                      Back
+                    </Button>
+                  )}
+                  {activeTab !== 'safety' ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="px-8 gap-2 bg-solar-yellow text-deep-navy hover:bg-solar-yellow/90 font-bold uppercase"
+                    >
+                      {isEditMode ? 'Update Plant' : 'Create Plant'}
+                      <ChevronRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                    >
+                      Complete Registration <CheckCircle2 className="w-4 h-4 ml-2" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </motion.form>
+          </div>
         </div>
       </div>
     </div>
@@ -751,16 +963,14 @@ function CreatePlant() {
 // Helpers
 const getInputClassName = (fieldName, touched, errors) => {
   const hasError = touched[fieldName] && errors[fieldName];
-  return `w-full pl-12 pr-4 py-4 bg-white/5 border ${
-    hasError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-solar-yellow/50'
-  } rounded-xl text-white placeholder:text-white/30 focus:outline-none transition-colors`;
+  return `w-full pl-12 pr-4 py-4 bg-white/5 border ${hasError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-solar-yellow/50'
+    } rounded-xl text-white placeholder:text-white/30 focus:outline-none transition-colors`;
 };
 
 const FormField = ({ name, label, required, children, className = '', touched = {}, errors = {} }) => (
   <div className={className}>
-    <label className={`block text-xs font-bold uppercase tracking-widest mb-3 transition-colors ${
-      touched[name] && errors[name] ? 'text-red-400' : 'text-white/60'
-    }`}>
+    <label className={`block text-xs font-bold uppercase tracking-widest mb-3 transition-colors ${touched[name] && errors[name] ? 'text-red-400' : 'text-white/60'
+      }`}>
       {label} {required && '*'}
     </label>
     {children}

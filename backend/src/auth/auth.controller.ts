@@ -12,7 +12,7 @@ import { loginSchema, registerSchema } from '../common/schemas/validation.schema
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -31,14 +31,14 @@ export class AuthController {
     const user = (req as any).user;
     // user object depends on JwtStrategy validate. With standard strategy it returns payload.
     // Assuming payload has 'sub' as userId.
-    return this.authService.logout(user['sub'] || user['userId']); 
+    return this.authService.logout(user.id);
   }
 
   @ApiBearerAuth()
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   async refreshTokens(@Req() req: Request) {
-    const userId = (req as any).user['sub'];
+    const userId = (req as any).user.id;
     const refreshToken = (req as any).user['refreshToken'];
     return this.authService.refreshTokens(userId, refreshToken);
   }

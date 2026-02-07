@@ -26,16 +26,18 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
 
   const menuItems = [
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/dashboard', allowedRoles: ['SUPER_ADMIN'] },
-    { name: 'REGION ADMIN', icon:LayoutDashboard , path: '/region-admin', allowedRoles: ['SUPER_ADMIN'] },
-    { name: 'GRID PLANT', icon:BugPlay , path: '/grid-plant', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
-    { name: 'PLANT ADMIN', icon:BugPlay , path: '/plant-admin', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
+    { name: 'REGION ADMIN', icon: LayoutDashboard, path: '/region-admin', allowedRoles: ['SUPER_ADMIN'] },
+    { name: 'GRID PLANT', icon: BugPlay, path: '/grid-plant', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
+    { name: 'PLANT ADMIN', icon: BugPlay, path: '/plant-admin', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
+    { name: 'DASHBOARD', icon: Users, path: '/plant-admin-dashboard', allowedRoles: ['PLANT_ADMIN'] },
     { name: 'SURVEY TEAMS', icon: Map, path: '/survey-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'INSTALLATION TEAMS', icon: Users, path: '/installation-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'WORKFLOW EXECUTION', icon: ClipboardCheck, path: '/installation-workflow', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'INSTALLATION_TEAM'] },
-    { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
-    { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
+    { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
+    { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },
     { name: 'ONBOARDING', icon: ClipboardCheck, path: '/customer/setup', allowedRoles: ['CUSTOMER'] },
+    { name: 'EMPLOYEES', icon: Users, path: '/employees', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'ANALYTICS', icon: Activity, path: '/analytics', allowedRoles: ['SUPER_ADMIN'] },
     { name: 'SYSTEM HEALTH', icon: Zap, path: '/health', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DEVICES', icon: HardDrive, path: '/devices', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
@@ -106,7 +108,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </nav>
           </div>
 
-          
+
         </div>
       </aside>
     </>

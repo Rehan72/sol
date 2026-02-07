@@ -14,10 +14,17 @@ export class AuthService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     private jwt: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async login(email: string, password: string) {
+    console.log(`Attempting login for email: ${email}`);
     const user = await this.usersRepo.findOne({ where: { email } });
+    if (user) {
+      console.log(`Found user: ${user.email} (ID: ${user.id})`);
+    } else {
+      console.log(`User not found for email: ${email}`);
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -88,7 +95,7 @@ export class AuthService {
       termAccepted: dto.termOfService,
     });
     await this.usersRepo.save(newCustomer);
-    
+
     return {
       name: newCustomer.name,
       message: `Hi ${newCustomer.name}, your onboarding is successful. Please login and add details.`,

@@ -16,7 +16,6 @@ export const logout = async () => {
   } catch (error) {
     console.error('Logout failed', error);
   } finally {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.clear();
   }
 };

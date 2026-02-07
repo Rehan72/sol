@@ -5,6 +5,12 @@ import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
 import { CustomerModule } from './customer/customer.module';
 import { RegionAdminModule } from './regionAdmin/regionAdmin.module';
+import { PlantModule } from './plant/plant.module';
+import { PlantAdminModule } from './plantAdmin/plantAdmin.module';
+import { EmployeesModule } from './employees/employees.module';
+import { TeamsModule } from './teams/teams.module';
+import { AuditModule } from './audit/audit.module';
+import { WorkflowModule } from './workflow/workflow.module';
 
 @Module({
     imports: [
@@ -27,6 +33,12 @@ import { RegionAdminModule } from './regionAdmin/regionAdmin.module';
         SeedModule,
         CustomerModule,
         RegionAdminModule,
+        PlantModule,
+        PlantAdminModule,
+        EmployeesModule,
+        TeamsModule,
+        AuditModule,
+        WorkflowModule,
     ],
 })
 export class AppModule { }

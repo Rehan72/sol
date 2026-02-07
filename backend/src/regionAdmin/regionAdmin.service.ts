@@ -17,7 +17,7 @@ export class RegionAdminService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(createRegionAdminDto: CreateRegionAdminDto): Promise<User> {
     // Check if email already exists
@@ -71,6 +71,7 @@ export class RegionAdminService {
         'regionCode',
         'country',
         'utility',
+        'status',
         'isOnboarded',
         'role',
       ],
@@ -97,6 +98,7 @@ export class RegionAdminService {
         'regionCode',
         'country',
         'utility',
+        'status',
         'isOnboarded',
         'role',
       ],

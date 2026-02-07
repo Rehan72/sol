@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Users, 
+import {
+  Plus,
+  Users,
   Map,
   Activity,
   ArrowUpDown,
@@ -23,165 +23,188 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-
-// Mock data for survey teams
-const mockTeams = [
-  {
-    id: 1,
-    teamName: 'Survey Squad A',
-    teamLead: 'Alice Springer',
-    membersCount: 3,
-    status: 'active',
-    assignedPlant: 'Sector 45 Residence',
-    type: 'Survey',
-    contact: 'alice@example.com'
-  },
-  {
-    id: 2,
-    teamName: 'Rapid Assessors',
-    teamLead: 'Bob Martin',
-    membersCount: 2,
-    status: 'inactive',
-    assignedPlant: 'Industrial Hub Alpha',
-    type: 'Survey',
-    contact: 'bob@example.com'
-  },
-];
-
-export const columns = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "teamName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Team Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                <Map className="w-5 h-5 text-solar-yellow" />
-             </div>
-             <div className="font-bold">{row.getValue("teamName")}</div>
-        </div>
-    ),
-  },
-  {
-    accessorKey: "teamLead",
-    header: "Team Lead",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2 text-white/90 font-medium">
-        <ShieldCheck className="w-4 h-4 text-emerald-400" />
-        <span>{row.getValue("teamLead")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "membersCount",
-    header: "Members",
-    cell: ({ row }) => <div className="font-medium pl-4">{row.getValue("membersCount")}</div>,
-  },
-  {
-    accessorKey: "assignedPlant",
-    header: "Assigned Grid Plant",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2 text-white/70">
-        <Briefcase className="w-4 h-4" />
-        <span>{row.getValue("assignedPlant")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-        const status = row.getValue("status");
-        return (
-            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                status === 'active' 
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
-              }`}>
-                {status}
-            </span>
-        )
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const team = row.original;
-      const navigate = useNavigate();
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigate(`/survey-teams/${team.id}`)}
-            >
-              View Team Details
-            </DropdownMenuItem>
-             <DropdownMenuItem
-              onClick={() => navigate(`/survey-teams/${team.id}`)}
-            >
-              Edit Team
-            </DropdownMenuItem>
-             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-400 focus:text-red-400">
-               Deactivate Team
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
+import TeamService from '../../services/TeamService';
+import Toaster from '../../components/ui/Toaster';
 
 function SurveyTeamList() {
   const navigate = useNavigate();
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = (message, type = 'info', duration = 3000) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    setTimeout(() => removeToast(id), duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  const fetchTeams = async () => {
+    try {
+      const data = await TeamService.getTeams('SURVEY');
+      setTeams(data);
+    } catch (error) {
+      console.error("Failed to fetch teams", error);
+      addToast("Failed to load survey teams", 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Team Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+            <Map className="w-5 h-5 text-solar-yellow" />
+          </div>
+          <div className="font-bold">{row.getValue("name")}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "teamLead",
+      header: "Team Lead",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-white/90 font-medium">
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          {/* Helper to safely access name */}
+          <span>{row.original.teamLead?.name || row.original.teamLead?.email || 'N/A'}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "members",
+      header: "Members",
+      cell: ({ row }) => <div className="font-medium pl-4">{row.original.members?.length || 0}</div>,
+    },
+    {
+      accessorKey: "customer",
+      header: "Assigned Customer",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-white/70">
+          <Briefcase className="w-4 h-4" />
+          <span>{row.original.customer?.name || row.original.customer?.email || 'Unassigned'}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status");
+        return (
+          <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${status === 'active'
+            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+            }`}>
+            {status}
+          </span>
+        )
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const team = row.original;
+        const cellNavigate = useNavigate();
+
+        const handleDelete = async () => {
+          if (confirm('Are you sure you want to delete this team?')) {
+            try {
+              await TeamService.deleteTeam(team.id);
+              addToast('Team deleted', 'success');
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+            } catch (error) {
+              addToast('Failed to delete team', 'error');
+            }
+          }
+        };
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => cellNavigate(`/survey-teams/${team.id}`)}
+              >
+                View Team Details
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => cellNavigate(`/survey-teams/edit/${team.id}`)}
+              >
+                Edit Team
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={handleDelete}>
+                Delete Team
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ], [navigate]);
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
+      <Toaster toasts={toasts} onRemove={removeToast} />
+
       {/* Cinematic Overlays */}
       <div className="film-grain" />
       <div className="cinematic-vignette" />
 
       {/* Background Gradient */}
-      <div 
+      <div
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)'
@@ -214,8 +237,8 @@ function SurveyTeamList() {
                 Survey <span className="text-solar-yellow">Teams</span>
               </h1>
             </div>
-            
-            <Button 
+
+            <Button
               onClick={() => navigate('/survey-teams/create')}
               variant="default"
               size="lg"
@@ -238,7 +261,7 @@ function SurveyTeamList() {
             { label: 'Total Surveyors', value: '8', icon: Users },
             { label: 'Pending Surveys', value: '12', icon: Activity },
             { label: 'Sites Completed', value: '45', icon: MapPin },
-            { label: 'Active Teams', value: '3', icon: ShieldCheck },
+            { label: 'Active Teams', value: teams.length, icon: ShieldCheck },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -262,16 +285,16 @@ function SurveyTeamList() {
 
         {/* Data Table Section */}
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="glass rounded-2xl p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="glass rounded-2xl p-6"
         >
-            <DataTable 
-                columns={columns} 
-                data={mockTeams} 
-                searchKey="teamName"
-            />
+          <DataTable
+            columns={columns}
+            data={teams}
+            searchKey="name"
+          />
         </motion.div>
 
       </div>

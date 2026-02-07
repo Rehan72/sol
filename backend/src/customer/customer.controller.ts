@@ -7,7 +7,7 @@ import {
   UsePipes,
   Get,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
 import { CustomerOnboardingDto } from '../auth/dto/customerOnborading.dto';
 import { AccessTokenGuard } from '../common/guards/access-token.guard';
@@ -18,27 +18,42 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 
 @ApiTags('Customer')
+@ApiBearerAuth()
 @Controller('customer')
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(private readonly customerService: CustomerService) { }
 
   @Post('customerOnboarding')
   @UseGuards(AccessTokenGuard)
   @UsePipes(new ZodValidationPipe(onboardingSchema))
   async onboardCustomer(@Req() req: any, @Body() dto: CustomerOnboardingDto) {
-    return this.customerService.onboardCustomer(req.user.sub, dto);
+    return this.customerService.onboardCustomer(req.user.id, dto);
   }
 
   @Get('profile')
   @UseGuards(AccessTokenGuard)
   async getProfile(@Req() req: any) {
-    return this.customerService.getProfile(req.user.sub);
+    return this.customerService.getProfile(req.user.id);
   }
 
   @Post('assign-survey')
   @UseGuards(AccessTokenGuard, RolesGuard)
   @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN)
-  async assignSurvey(@Body() body: { customerId: string; teamName: string }) {
-    return this.customerService.assignSurveyTeam(body.customerId, body.teamName);
+  async assignSurvey(@Body() body: { customerId: string; teamId: string }, @Req() req: any) {
+    return this.customerService.assignSurveyTeam(body.customerId, body.teamId, req.user.id);
+  }
+
+  @Get('solar-requests')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+  async getSolarRequests(@Req() req: any) {
+    return this.customerService.getSolarRequests(req.user);
+  }
+
+  @Get()
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+  async getAllCustomers(@Req() req: any) {
+    return this.customerService.getAllCustomers(req.user);
   }
 }

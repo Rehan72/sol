@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    Clock, 
-    CheckCircle2, 
-    MapPin, 
-    Sun, 
-    Activity, 
-    LogOut,
-    Calendar,
-    FileText,
-    ArrowRight,
-    Wallet,
-    Zap
+import {
+  Clock,
+  CheckCircle2,
+  MapPin,
+  Sun,
+  Activity,
+  LogOut,
+  Calendar,
+  FileText,
+  ArrowRight,
+  Wallet,
+  Zap
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,32 +19,32 @@ import { getCustomerProfile } from '../../api/customer';
 import { useAuthStore } from '../../store/authStore';
 
 const MOCK_REQUEST = {
-    id: 'SOL-2026-992',
-    type: 'Home Solar Installation',
-    location: 'Patna, Bihar',
-    property: 'Residential',
-    status: 'Survey Scheduled',
-    progress: [
-        { id: 1, title: 'Request Submitted', completed: true },
-        { id: 2, title: 'Survey Assigned', completed: true },
-        { id: 3, title: 'Survey Pending', completed: false, current: true },
-        { id: 4, title: 'Installation', completed: false },
-        { id: 5, title: 'Solar Activated', completed: false }
-    ],
-    quotation: null 
+  id: 'SOL-2026-992',
+  type: 'Home Solar Installation',
+  location: 'Patna, Bihar',
+  property: 'Residential',
+  status: 'Survey Scheduled',
+  progress: [
+    { id: 1, title: 'Request Submitted', completed: true },
+    { id: 2, title: 'Survey Assigned', completed: true },
+    { id: 3, title: 'Survey Pending', completed: false, current: true },
+    { id: 4, title: 'Installation', completed: false },
+    { id: 5, title: 'Solar Activated', completed: false }
+  ],
+  quotation: null
 };
 
 const MOCK_QUOTATION = {
-    capacity: '5 kW',
-    breakdown: [
-        { item: 'Solar Panels (Mono PERC)', cost: 180000 },
-        { item: 'Inverter (Grid-Tied)', cost: 60000 },
-        { item: 'Structure & Wiring', cost: 40000 },
-        { item: 'Installation & Commissioning', cost: 20000 }
-    ],
-    total: 300000,
-    subsidy: 78000,
-    final: 222000
+  capacity: '5 kW',
+  breakdown: [
+    { item: 'Solar Panels (Mono PERC)', cost: 180000 },
+    { item: 'Inverter (Grid-Tied)', cost: 60000 },
+    { item: 'Structure & Wiring', cost: 40000 },
+    { item: 'Installation & Commissioning', cost: 20000 }
+  ],
+  total: 300000,
+  subsidy: 78000,
+  final: 222000
 };
 
 
@@ -62,26 +62,29 @@ const CustomerDashboard = () => {
       try {
         const data = await getCustomerProfile();
         setProfile(data);
-        
+
         // Update auth store with onboarding status
         setOnboardingStatus(data.isOnboarded || false);
-        
-        console.log(data,'data');
-        
+
+        console.log(data, 'data');
+
         // Map backend state to UI
         if (data) {
           const progressSteps = [
             { id: 1, title: 'Request Submitted', completed: true },
             { id: 2, title: 'Survey Assigned', completed: data.surveyStatus === 'ASSIGNED' || data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED' },
-            { id: 3, title: 'Site Survey', 
-              completed: data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED', 
-              current: data.surveyStatus === 'ASSIGNED' && data.installationStatus === 'ONBOARDED' 
+            {
+              id: 3, title: 'Site Survey',
+              completed: data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED',
+              current: data.surveyStatus === 'ASSIGNED' && data.installationStatus === 'ONBOARDED'
             },
-            { id: 4, title: 'Quotation Ready', 
+            {
+              id: 4, title: 'Quotation Ready',
               completed: data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED',
               current: data.installationStatus === 'QUOTATION_READY' && !showQuote
             },
-            { id: 5, title: 'Installation', 
+            {
+              id: 5, title: 'Installation',
               completed: data.installationStatus === 'ACTIVATED',
               current: (data.installationStatus === 'QUOTATION_READY' && showQuote)
             },
@@ -115,7 +118,7 @@ const CustomerDashboard = () => {
         quotation: MOCK_QUOTATION,
         progress: request.progress.map(p =>
           p.id <= 3 ? { ...p, completed: true, current: false } :
-          p.id === 4 ? { ...p, current: true } : p
+            p.id === 4 ? { ...p, current: true } : p
         )
       });
     } else {
@@ -140,10 +143,10 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-deep-navy text-white overflow-hidden flex flex-col selection:bg-solar-yellow/30">
       {/* AUTH-CONSISTENT BACKGROUND */}
-      <div className="fixed inset-0 z-0 pointer-events-none" 
-           style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} 
+      <div className="fixed inset-0 z-0 pointer-events-none"
+        style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }}
       />
-      
+
       {/* Subtle HUD Ambient Overlays */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-solar-yellow/5 blur-[150px] rounded-full" />
@@ -155,7 +158,7 @@ const CustomerDashboard = () => {
 
       {/* FLOATING COMMAND BAR */}
       <nav className="relative z-50 px-6 py-4">
-        <motion.div 
+        <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="max-w-7xl mx-auto glass rounded-3xl border border-white/10 px-8 py-3 flex justify-between items-center bg-white/5 backdrop-blur-2xl"
@@ -172,46 +175,45 @@ const CustomerDashboard = () => {
 
           <div className="hidden lg:flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
             {[
-              { 
-                label: 'Payments', 
-                icon: Wallet, 
-                color: 'text-emerald-400', 
+              {
+                label: 'Payments',
+                icon: Wallet,
+                color: 'text-emerald-400',
                 path: '/customer/payments',
-                enabled: profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED' || showQuote 
+                enabled: profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED' || showQuote
               },
-              { 
-                label: 'Invoices', 
-                icon: FileText, 
-                color: 'text-blue-400', 
+              {
+                label: 'Invoices',
+                icon: FileText,
+                color: 'text-blue-400',
                 path: '/customer/invoices',
                 enabled: profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED' || showQuote
               },
-              { 
-                label: 'Benefits', 
-                icon: Sun, 
-                color: 'text-solar-yellow', 
+              {
+                label: 'Benefits',
+                icon: Sun,
+                color: 'text-solar-yellow',
                 path: '/customer/benefits',
                 enabled: profile?.installationStatus === 'ACTIVATED' || showQuote
               },
-              { 
-                label: 'Support', 
-                icon: Activity, 
-                color: 'text-purple-400', 
+              {
+                label: 'Support',
+                icon: Activity,
+                color: 'text-purple-400',
                 path: '#support',
                 enabled: true
               }
             ].map((item) => (
-              <Button 
+              <Button
                 key={item.label}
-                variant="ghost" 
-                size="sm" 
+                variant="ghost"
+                size="sm"
                 disabled={!item.enabled}
                 onClick={() => item.enabled && navigate(item.path)}
-                className={`px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                  item.enabled 
-                    ? 'text-white border-solar-yellow/20 hover:text-solar-yellow hover:border-solar-yellow/50 hover:bg-solar-yellow/5' 
-                    : 'text-white/10 border-white/5 cursor-not-allowed grayscale'
-                }`}
+                className={`px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${item.enabled
+                  ? 'text-white border-solar-yellow/20 hover:text-solar-yellow hover:border-solar-yellow/50 hover:bg-solar-yellow/5'
+                  : 'text-white/10 border-white/5 cursor-not-allowed grayscale'
+                  }`}
                 title={!item.enabled ? `${item.label} will be available once your installation progresses.` : ''}
               >
                 <item.icon className={`w-4 h-4 ${item.enabled ? item.color : 'text-white/10'}`} />
@@ -220,7 +222,7 @@ const CustomerDashboard = () => {
             ))}
           </div>
 
-         
+
         </motion.div>
       </nav>
 
@@ -236,14 +238,13 @@ const CustomerDashboard = () => {
             </h1>
           </motion.div>
 
-          <Button 
+          <Button
             onClick={() => isStatusClickable && toggleDemoState()}
             disabled={!isStatusClickable}
-            className={`glass px-6 py-3 h-auto rounded-xl text-[10px] font-black tracking-[0.3em] uppercase transition-all group border ${
-              isStatusClickable 
-                ? 'border-solar-yellow/20 hover:border-solar-yellow/50 hover:text-solar-yellow cursor-pointer' 
-                : 'border-white/10 opacity-50 cursor-not-allowed grayscale'
-            }`}
+            className={`glass px-6 py-3 h-auto rounded-xl text-[10px] font-black tracking-[0.3em] uppercase transition-all group border ${isStatusClickable
+              ? 'border-solar-yellow/20 hover:border-solar-yellow/50 hover:text-solar-yellow cursor-pointer'
+              : 'border-white/10 opacity-50 cursor-not-allowed grayscale'
+              }`}
             title={!isStatusClickable ? 'Status details will be interactive once the quotation is ready.' : ''}
           >
             <span className="text-white/40 mr-2 group-hover:text-white/60">SYSTEM STATUS:</span>
@@ -256,7 +257,7 @@ const CustomerDashboard = () => {
         {/* METRIC HUD GRID - Only visible when procedure is complete */}
         <AnimatePresence>
           {isActivated && (
-            <motion.section 
+            <motion.section
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -314,27 +315,24 @@ const CustomerDashboard = () => {
                 <div className="space-y-12">
                   {request.progress.map((step, idx) => (
                     <div key={step.id} className="flex gap-8 group/step relative">
-                      <div className={`relative z-10 w-20 h-20 rounded-2xl border transition-all duration-500 flex items-center justify-center ${
-                        step.completed ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]' :
+                      <div className={`relative z-10 w-20 h-20 rounded-2xl border transition-all duration-500 flex items-center justify-center ${step.completed ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]' :
                         step.current ? 'bg-solar-yellow/10 border-solar-yellow shadow-[0_0_30px_rgba(255,215,0,0.2)]' :
-                        'bg-white/5 border-white/5 opacity-30 grayscale'
-                      }`}>
-                        {step.completed ? <CheckCircle2 className="w-8 h-8 text-emerald-400" /> : 
-                         step.current ? <Activity className="w-8 h-8 text-solar-yellow animate-pulse" /> :
-                         <Sun className="w-8 h-8 text-white/20" />
-                         }
-                      </div>
-                      
-                      <div className="flex flex-col justify-center">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-1 ${
-                          step.completed ? 'text-emerald-400/50' : step.current ? 'text-solar-yellow' : 'text-white/20'
+                          'bg-white/5 border-white/5 opacity-30 grayscale'
                         }`}>
+                        {step.completed ? <CheckCircle2 className="w-8 h-8 text-emerald-400" /> :
+                          step.current ? <Activity className="w-8 h-8 text-solar-yellow animate-pulse" /> :
+                            <Sun className="w-8 h-8 text-white/20" />
+                        }
+                      </div>
+
+                      <div className="flex flex-col justify-center">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-1 ${step.completed ? 'text-emerald-400/50' : step.current ? 'text-solar-yellow' : 'text-white/20'
+                          }`}>
                           Phase {idx + 1}: {step.completed ? 'SUCCESS' : step.current ? 'PROCESSING' : 'WAITING'}
                         </span>
-                        <h3 className={`text-xl font-black uppercase tracking-tight ${
-                          step.completed ? 'text-emerald-400 line-through decoration-emerald-400' :
+                        <h3 className={`text-xl font-black uppercase tracking-tight ${step.completed ? 'text-emerald-400 line-through decoration-emerald-400' :
                           step.current ? 'text-white' : 'text-white/20'
-                        }`}>
+                          }`}>
                           {step.title}
                         </h3>
                         {step.current && (
@@ -353,68 +351,133 @@ const CustomerDashboard = () => {
 
             {/* QUICK ACTIONS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-               <div className="glass p-8 rounded-[2rem] border border-white/10 hover:border-solar-yellow/50 transition-all cursor-pointer group flex items-center justify-between">
-                  <div>
-                    <h4 className="font-black uppercase tracking-wider text-white">Request Survey</h4>
-                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] mt-1">Direct Coordination</p>
-                  </div>
-                  <MapPin className="w-6 h-6 text-solar-yellow/40 group-hover:text-solar-yellow" />
-               </div>
-               <div className="glass p-8 rounded-[2rem] border border-white/10 hover:border-blue-500/50 transition-all cursor-pointer group flex items-center justify-between">
-                  <div>
-                    <h4 className="font-black uppercase tracking-wider text-white">Documentation</h4>
-                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] mt-1">Legal & Technical</p>
-                  </div>
-                  <FileText className="w-6 h-6 text-blue-500/40 group-hover:text-blue-500" />
-               </div>
+              <div className="glass p-8 rounded-[2rem] border border-white/10 hover:border-solar-yellow/50 transition-all cursor-pointer group flex items-center justify-between">
+                <div>
+                  <h4 className="font-black uppercase tracking-wider text-white">Request Survey</h4>
+                  <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] mt-1">Direct Coordination</p>
+                </div>
+                <MapPin className="w-6 h-6 text-solar-yellow/40 group-hover:text-solar-yellow" />
+              </div>
+              <div className="glass p-8 rounded-[2rem] border border-white/10 hover:border-blue-500/50 transition-all cursor-pointer group flex items-center justify-between">
+                <div>
+                  <h4 className="font-black uppercase tracking-wider text-white">Documentation</h4>
+                  <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] mt-1">Legal & Technical</p>
+                </div>
+                <FileText className="w-6 h-6 text-blue-500/40 group-hover:text-blue-500" />
+              </div>
             </div>
           </div>
 
           {/* SIDEBAR */}
           <div className="space-y-8">
             <AnimatePresence>
-                {request.quotation && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-dark rounded-[2.5rem] p-8 border border-emerald-500/20 relative overflow-hidden">
-                       <div className="relative z-10">
-                          <div className="flex items-center gap-3 mb-8">
-                             <Wallet className="w-6 h-6 text-emerald-400" />
-                             <div>
-                               <h3 className="text-xl font-black uppercase tracking-tighter">Solar Quote</h3>
-                               <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Limited Time Offer</p>
-                             </div>
-                          </div>
-                          <div className="space-y-4 mb-8">
-                             {request.quotation.breakdown.map((item, i) => (
-                               <div key={i} className="flex justify-between text-xs font-bold uppercase tracking-wider">
-                                  <span className="text-white/40">{item.item}</span>
-                                  <span>₹{item.cost.toLocaleString()}</span>
-                               </div>
-                             ))}
-                          </div>
-                          <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20 mb-8 text-center text-emerald-400">
-                             <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1">Total Due</p>
-                             <p className="text-4xl font-black">₹{request.quotation.final.toLocaleString()}</p>
-                          </div>
-                          <Button className="w-full bg-emerald-500 text-deep-navy font-black py-7 rounded-xl hover:bg-emerald-400 transition-all uppercase tracking-[0.2em] text-[10px]">
-                             Proceed to Payment <ArrowRight className="w-4 h-4 ml-2" />
-                          </Button>
-                       </div>
-                    </motion.div>
-                )}
+              {request.quotation && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-dark rounded-[2.5rem] p-8 border border-emerald-500/20 relative overflow-hidden">
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-8">
+                      <Wallet className="w-6 h-6 text-emerald-400" />
+                      <div>
+                        <h3 className="text-xl font-black uppercase tracking-tighter">Solar Quote</h3>
+                        <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Limited Time Offer</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4 mb-8">
+                      {request.quotation.breakdown.map((item, i) => (
+                        <div key={i} className="flex justify-between text-xs font-bold uppercase tracking-wider">
+                          <span className="text-white/40">{item.item}</span>
+                          <span>₹{item.cost.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20 mb-8 text-center text-emerald-400">
+                      <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1">Total Due</p>
+                      <p className="text-4xl font-black">₹{request.quotation.final.toLocaleString()}</p>
+                    </div>
+                    <Button className="w-full bg-emerald-500 text-deep-navy font-black py-7 rounded-xl hover:bg-emerald-400 transition-all uppercase tracking-[0.2em] text-[10px]">
+                      Proceed to Payment <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             <div className="glass p-8 rounded-[2rem] border border-white/5">
-               <div className="flex items-center gap-3 mb-4">
-                 <Activity className="w-5 h-5 text-solar-yellow" />
-                 <h4 className="font-black uppercase tracking-widest text-xs">Expert Insights</h4>
-               </div>
-               <p className="text-xs text-white/40 leading-relaxed font-bold uppercase tracking-wider italic">
-                 "Our automated analysis shows your roof area is optimized for maximum solar absorption. Admin is coordinating the next dispatch."
-               </p>
+              <div className="flex items-center gap-3 mb-4">
+                <Activity className="w-5 h-5 text-solar-yellow" />
+                <h4 className="font-black uppercase tracking-widest text-xs">Expert Insights</h4>
+              </div>
+              <p className="text-xs text-white/40 leading-relaxed font-bold uppercase tracking-wider italic mb-8">
+                "Our automated analysis shows your roof area is optimized for maximum solar absorption. Admin is coordinating the next dispatch."
+              </p>
+
+              {/* New Section: Plant & Region Details */}
+              <div className="border-t border-white/5 pt-6 space-y-4">
+                <h4 className="font-black uppercase tracking-widest text-xs text-white/60">Logistics & Support</h4>
+
+                {/* Plant Details */}
+                {profile?.plantDetails && (
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Assigned Plant</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.plantDetails.plantName}</p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">{profile.plantDetails.city}, {profile.plantDetails.state}</p>
+
+                    {/* Owner Details */}
+                    <div className="pt-2 border-t border-white/5 mt-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Owner Contact</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.plantDetails.ownerName}</p>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest">{profile.plantDetails.ownerPhone}</p>
+                      {profile.plantDetails.ownerEmail && <p className="text-[10px] text-white/40 uppercase tracking-widest">{profile.plantDetails.ownerEmail}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Region Admin Details */}
+                {profile?.regionDetails && (
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Regional Office</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white mb-1">{profile.regionDetails.regionName || 'Region Admin'}</p>
+
+                    {/* Admin Details */}
+                    <div className="pt-2 border-t border-white/5 mt-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Admin Contact</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.regionDetails.name}</p>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest">{profile.regionDetails.phone}</p>
+                      {profile.regionDetails.email && <p className="text-[10px] text-white/40 uppercase tracking-widest">{profile.regionDetails.email}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plant Admin Details */}
+                {profile?.plantAdminName && (
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Plant Administrator</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.plantAdminName}</p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest">Phone: {profile.plantAdminPhone}</p>
+                    {profile.plantAdminEmail && <p className="text-[10px] text-white/40 uppercase tracking-widest">Email: {profile.plantAdminEmail}</p>}
+                  </div>
+                )}
+
+                {/* Survey Team Details */}
+                {profile?.surveyTeam && (
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Assigned Survey Team</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.surveyTeam.name}</p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest">Code: {profile.surveyTeam.code}</p>
+
+                    {profile.surveyTeam.teamLead && (
+                      <div className="pt-2 border-t border-white/5 mt-2">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Team Lead</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-white">{profile.surveyTeam.teamLead.name}</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{profile.surveyTeam.teamLead.phone}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <Button variant="link" size="sm" onClick={() => navigate('/customer/cancellation')} className="w-full text-[9px] font-black uppercase tracking-[0.4em] text-white/20 hover:text-red-500 transition-colors">
-               Terminate Installation Request
+              Terminate Installation Request
             </Button>
           </div>
         </div>

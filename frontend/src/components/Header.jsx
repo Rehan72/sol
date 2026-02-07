@@ -20,7 +20,7 @@ function Header({ sidebarOpen, setSidebarOpen }) {
 
   const formatRole = (roleStr) => {
     if (!roleStr) return '';
-    return roleStr.split('_').map(word => 
+    return roleStr.split('_').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).join(' ');
   };
@@ -39,9 +39,9 @@ function Header({ sidebarOpen, setSidebarOpen }) {
         </Button>
 
         <div className="flex items-center group">
-          <div className="w-12 h-12 relative flex items-center justify-center overflow-hidden shrink-0">
+          {/* <div className="w-12 h-12 relative flex items-center justify-center overflow-hidden shrink-0">
             <RealisticSun className="w-12 h-12" scale={0.5} rotate={true} />
-          </div>
+          </div> */}
           <span className="text-2xl font-black tracking-tighter uppercase whitespace-nowrap -ml-1">
             SOLAR<span className="text-solar-yellow italic">MAX</span>
           </span>
@@ -98,8 +98,8 @@ function Header({ sidebarOpen, setSidebarOpen }) {
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Portal>
-            <DropdownMenu.Content 
-              align="end" 
+            <DropdownMenu.Content
+              align="end"
               className="min-w-[200px] glass-dark border border-white/10 rounded-2xl p-2 shadow-2xl backdrop-blur-3xl z-50 animate-in fade-in zoom-in-95 duration-200"
               sideOffset={8}
             >
@@ -108,12 +108,12 @@ function Header({ sidebarOpen, setSidebarOpen }) {
                 <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">{user?.email}</p>
                 <p className="text-[8px] font-bold text-solar-yellow/40 uppercase tracking-widest mt-1">{formatRole(role)}</p>
               </div>
-              
+
               <DropdownMenu.Item className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-solar-yellow text-white/60 text-xs font-bold tracking-wider uppercase transition-colors outline-none cursor-pointer">
                 <User className="w-4 h-4" /> Profile
               </DropdownMenu.Item>
-              
-              <DropdownMenu.Item 
+
+              <DropdownMenu.Item
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-red-500/10 hover:text-red-500 text-white/60 text-xs font-bold tracking-wider uppercase transition-colors outline-none cursor-pointer mt-1"
               >

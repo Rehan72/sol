@@ -42,9 +42,7 @@ export const useAuthStore = create(
 
       logout: () => {
         set({ token: null, user: null, role: null, isOnboarded: false, isAuthenticated: false });
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('auth-storage'); // Force clear persistent storage on logout
+        localStorage.clear(); // Clear everything as requested
       },
 
       setOnboardingStatus: (isOnboarded) => {

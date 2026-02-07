@@ -1,0 +1,124 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn } from 'typeorm';
+import { Survey } from './survey.entity';
+
+@Entity('quotations')
+export class Quotation {
+    @PrimaryGeneratedColumn('increment')
+    id: number;
+
+    @Column({ unique: true })
+    quotationNumber: string;
+
+    @Column({ type: 'int' })
+    surveyId: number;
+
+    @OneToOne(() => Survey)
+    @JoinColumn({ name: 'surveyId' })
+    survey: Survey;
+
+    @Column({ nullable: true })
+    validityDate: Date;
+
+    // B. System Configuration
+    @Column({ type: 'float' })
+    proposedSystemCapacity: number; // kW
+
+    @Column({ default: 'Grid-connected' })
+    plantType: string;
+
+    @Column({ nullable: true })
+    numberOfPanels: number;
+
+    @Column({ nullable: true })
+    panelWattage: number; // Wp
+
+    @Column({ nullable: true })
+    panelBrand: string;
+
+    @Column({ nullable: true })
+    inverterBrand: string;
+
+    @Column({ nullable: true })
+    inverterType: string;
+
+    @Column({ nullable: true })
+    mountingStructureType: string;
+
+    // C. Energy Generation Estimation
+    @Column({ type: 'float', nullable: true })
+    annualEnergyGeneration: number; // kWh
+
+    @Column({ type: 'float', nullable: true })
+    monthlyAverageGeneration: number;
+
+    @Column({ type: 'float', nullable: true })
+    cuf: number; // %
+
+    @Column({ type: 'float', nullable: true })
+    performanceRatio: number; // %
+
+    // D. Financial Breakdown
+    @Column({ type: 'float', nullable: true })
+    costSolarModules: number;
+
+    @Column({ type: 'float', nullable: true })
+    costInverters: number;
+
+    @Column({ type: 'float', nullable: true })
+    costStructure: number;
+
+    @Column({ type: 'float', nullable: true })
+    costBOS: number;
+
+    @Column({ type: 'float', nullable: true })
+    costInstallation: number;
+
+    @Column({ type: 'float', nullable: true })
+    costNetMetering: number;
+
+    @Column({ type: 'float' })
+    totalProjectCost: number;
+
+    // E. Subsidy & Incentives
+    @Column({ type: 'float', nullable: true })
+    governmentSubsidy: number;
+
+    @Column({ type: 'float', nullable: true })
+    netProjectCost: number;
+
+    // F. Savings & ROI Analysis
+    @Column({ type: 'float', nullable: true })
+    annualElectricitySavings: number;
+
+    @Column({ type: 'float', nullable: true })
+    electricityTariff: number;
+
+    @Column({ type: 'float', nullable: true })
+    paybackPeriod: number; // Years
+
+    @Column({ type: 'float', nullable: true })
+    savings25Years: number;
+
+    @Column({ type: 'float', nullable: true })
+    irr: number; // %
+
+    // G. O&M
+    @Column({ type: 'int', nullable: true })
+    warrantyPanelsYears: number;
+
+    @Column({ type: 'int', nullable: true })
+    warrantyInverterYears: number;
+
+    // H. Status & Workflow
+    @Column({ default: 'DRAFT' })
+    status: string; // DRAFT / REVIEW_PENDING / APPROVED / REJECTED
+
+    @Column({ type: 'int', default: 1 })
+    version: number;
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
+}

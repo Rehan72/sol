@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
 
 // Placeholders for related entities. Logic implies these exist or will exist.
@@ -81,6 +81,9 @@ export class User {
   @Column({ nullable: true })
   utility: string;
 
+  @Column({ nullable: true, default: 'active' })
+  status: string;
+
   @Column({ nullable: true })
   propertyType: string;
 
@@ -104,4 +107,20 @@ export class User {
 
   @Column({ nullable: true })
   assignedSurveyTeam: string;
+
+  // Employee specific fields
+  @Column({ nullable: true })
+  designation: string; // e.g., 'Surveyor', 'Installer'
+
+  @Column({ nullable: true })
+  teamName: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  documents: string[]; // Array of file paths/URLs
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

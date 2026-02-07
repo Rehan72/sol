@@ -63,6 +63,11 @@ export class CreateRegionAdminDto {
   @IsOptional()
   utility?: string;
 
+  @ApiProperty({ example: 'active', required: false })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
   @ApiProperty({ example: 19.0760, required: false })
   @IsNumber()
   @IsOptional()

@@ -23,12 +23,16 @@ import SolarRequests from "../pages/admin/SolarRequests";
 import CustomerList from "../pages/customer/CustomerList";
 import CreateCustomer from "../pages/customer/CreateCustomer";
 import CustomerPayments from "../pages/customer/CustomerPayments";
-
-
 import CustomerInvoices from "../pages/customer/CustomerInvoices";
 import CustomerBenefits from "../pages/customer/CustomerBenefits";
 import CustomerCancellation from "../pages/customer/CustomerCancellation";
 import PlantCancellation from "../pages/plants/PlantCancellation";
+import EmployeesList from "../pages/employees/EmployeesList";
+import CreateEmployees from "../pages/employees/CreateEmployees";
+import PlantAdminDashboard from "../pages/plants/plantAdmin/PlantAdminDashboard";
+import CreateMaintenanceTeam from "../pages/maintenanceTeam/CreateMaintenanceTeam";
+import MaintenanceTeamList from "../pages/maintenanceTeam/MaintenanceTeamList";
+import MaintenanceTeamDetail from "../pages/maintenanceTeam/MaintenanceTeamDetail";
 
 export const routeParams = "management";
 
@@ -36,155 +40,212 @@ export const routeParams = "management";
 
 
 export default [
-   {
-     element: Dashboard,
-     path: `dashboard`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: RegionAdminList,
-     path: `region-admin`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: CreateRegionAdmin,
-     path: `region-admin/create`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: PlantList,
-     path: `grid-plant`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: CreatePlant,
-     path: `grid-plant/create`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: PlantPayments,
-     path: `grid-plant/:id/payments`,
-     exact: true
-   },
-   {
-     element: PlantCancellation,
-     path: `grid-plant/:id/cancellation`,
-     exact: true
-   },
-   {
-     element: PlantAdminList,
-     path: `plant-admin`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: CreatePlantAdmin,
-     path: `plant-admin/create`,
-     //permission: RoutePermission?.PLATFORM_ADMIN,
-     exact: true
-   },
-   {
-     element: InstallationTeamList,
-     path: `installation-teams`,
-     exact: true
-   },
-   {
-     element: CreateInstallationTeam,
-     path: `installation-teams/create`,
-     exact: true
-   },
-   {
-     element: InstallationTeamDetail,
-     path: `installation-teams/:id`,
-     exact: true
-   },
-   {
-     element: SurveyTeamList,
-     path: `survey-teams`,
-     exact: true
-   },
-   {
-     element: CreateSurveyTeam,
-     path: `survey-teams/create`,
-     exact: true
-   },
-   {
-     element: SurveyTeamDetail,
-     path: `survey-teams/:id`,
-     exact: true
-   },
-   {
-     element: InstallationWorkflow,
-     path: `installation-workflow`, // For demo purposes, normally linked to plant ID
-     exact: true
-   },
-   {
-     element: HandoffReview,
-     path: `handoff/review`,
-     exact: true
-   },
-   {
-     element: CommissioningHandoff,
-     path: `commissioning/handoff`,
-     exact: true
-   },
-   {
-     element: AuditTrail,
-     path: `audit-trail`,
-     exact: true
-   },
-   {
-     element: CustomerOnboarding,
-     path: `customer/setup`,
-     exact: true
-   },
-   {
-     element: CustomerDashboard,
-     path: `customer/dashboard`,
-     exact: true
-   },
-   {
-     element: SolarRequests,
-     path: `admin/leads`,
-     exact: true
-   },
-   {
-     element: CustomerList,
-     path: `customer`,
-     exact: true
-   },
-    {
-     element: CreateCustomer,
-     path: `customer/create`,
-     exact: true
-   },
-   {
-     element: CustomerPayments,
-     path: `customer/payments`,
-     exact: true
-   },
-   {
-     element: CustomerInvoices,
-     path: `customer/invoices`,
-     exact: true
-   },
-   {
-     element: CustomerBenefits,
-     path: `customer/benefits`,
-     exact: true
-   },
-   {
-     element: CustomerCancellation,
-     path: `customer/cancellation`,
-     exact: true
-   },
+  {
+    element: Dashboard,
+    path: `dashboard`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: RegionAdminList,
+    path: `region-admin`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreateRegionAdmin,
+    path: `region-admin/create`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreateRegionAdmin,
+    path: `region-admin/edit`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: PlantList,
+    path: `grid-plant`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreatePlant,
+    path: `grid-plant/create`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreatePlant,
+    path: `grid-plant/edit`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: PlantPayments,
+    path: `grid-plant/:id/payments`,
+    exact: true
+  },
+  {
+    element: PlantCancellation,
+    path: `grid-plant/:id/cancellation`,
+    exact: true
+  },
+  {
+    element: PlantAdminList,
+    path: `plant-admin`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreatePlantAdmin,
+    path: `plant-admin/create`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: CreatePlantAdmin,
+    path: `plant-admin/edit`,
+    //permission: RoutePermission?.PLATFORM_ADMIN,
+    exact: true
+  },
+  {
+    element: InstallationTeamList,
+    path: `installation-teams`,
+    exact: true
+  },
+  {
+    element: CreateInstallationTeam,
+    path: `installation-teams/create`,
+    exact: true
+  },
+  {
+    element: InstallationTeamDetail,
+    path: `installation-teams/:id`,
+    exact: true
+  },
+  {
+    element: SurveyTeamList,
+    path: `survey-teams`,
+    exact: true
+  },
+  {
+    element: CreateSurveyTeam,
+    path: `survey-teams/create`,
+    exact: true
+  },
+  {
+    element: CreateSurveyTeam,
+    path: `survey-teams/edit/:id`,
+    exact: true
+  },
+  {
+    element: SurveyTeamDetail,
+    path: `survey-teams/:id`,
+    exact: true
+  },
+  {
+    element: InstallationWorkflow,
+    path: `installation-workflow`, // For demo purposes, normally linked to plant ID
+    exact: true
+  },
+  {
+    element: InstallationWorkflow,
+    path: `installation-workflow/:customerId`,
+    exact: true
+  },
+  {
+    element: HandoffReview,
+    path: `handoff/review`,
+    exact: true
+  },
+  {
+    element: CommissioningHandoff,
+    path: `commissioning/handoff`,
+    exact: true
+  },
+  {
+    element: AuditTrail,
+    path: `audit-trail`,
+    exact: true
+  },
+  {
+    element: CustomerOnboarding,
+    path: `customer/setup`,
+    exact: true
+  },
+  {
+    element: CustomerDashboard,
+    path: `customer/dashboard`,
+    exact: true
+  },
+  {
+    element: SolarRequests,
+    path: `admin/leads`,
+    exact: true
+  },
+  {
+    element: CustomerList,
+    path: `customer`,
+    exact: true
+  },
+  {
+    element: CreateCustomer,
+    path: `customer/create`,
+    exact: true
+  },
+  {
+    element: CustomerPayments,
+    path: `customer/payments`,
+    exact: true
+  },
+  {
+    element: CustomerInvoices,
+    path: `customer/invoices`,
+    exact: true
+  },
+  {
+    element: CustomerBenefits,
+    path: `customer/benefits`,
+    exact: true
+  },
+  {
+    element: CustomerCancellation,
+    path: `customer/cancellation`,
+    exact: true
+  },
+  {
+    element: EmployeesList,
+    path: `employees`,
+    exact: true
+  },
+  {
+    element: CreateEmployees,
+    path: `employees/create`,
+    exact: true
+  },
+  {
+    element: PlantAdminDashboard,
+    path: `plant-admin-dashboard`,
+    exact: true
+  },
+  {
+    element: MaintenanceTeamList,
+    path: `maintenance-teams`,
+    exact: true
+  },
+  {
+    element: CreateMaintenanceTeam,
+    path: `maintenance-teams/create`,
+    exact: true
+  },
+  {
+    element: MaintenanceTeamDetail,
+    path: `maintenance-teams/:id`,
+    exact: true
+  }
 
 
-   
 
 ]

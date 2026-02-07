@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Sun, 
-  Zap, 
-  Battery, 
+import {
+  Plus,
+  Sun,
+  Zap,
+  Battery,
   Activity,
   ArrowUpDown,
   MoreHorizontal,
   MapPin,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { DataTable } from '../../components/shared/data-table';
@@ -24,175 +25,221 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
+import { getAllPlants, getPlantStatistics, deletePlant } from '../../api/plant';
+import Toaster from '../../components/ui/Toaster';
 
-import { MOCK_PLANTS as mockPlants } from '../../data/mockData';
 
-export const columns = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "image",
-    header: "Image",
-    cell: ({ row }) => (
-      <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
-        <img 
-          src={row.getValue("image")} 
-          alt={row.getValue("name")} 
-          className="w-full h-full object-cover"
-        />
-      </div>
-    ),
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => <div className="font-bold">{row.getValue("name")}</div>,
-  },
-  {
-    accessorKey: "location",
-    header: "Location",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2 text-white/70">
-        <MapPin className="w-4 h-4" />
-        <span>{row.getValue("location")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "capacity",
-    header: "Capacity",
-    cell: ({ row }) => <div className="font-medium text-solar-yellow">{row.getValue("capacity")}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-        const status = row.getValue("status");
-        return (
-            <span className={`px-2 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                status === 'active' 
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                  : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-              }`}>
-                {status}
-            </span>
-        )
-    },
-  },
-  {
-    accessorKey: "generation",
-    header: "Generation (Today)",
-    cell: ({ row }) => <div>{row.getValue("generation")}</div>,
-  },
-  {
-    accessorKey: "efficiency",
-    header: "Efficiency",
-    cell: ({ row }) => {
-        const efficiency = row.getValue("efficiency");
-        return (
-            <div className="w-[120px]">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium text-solar-yellow">{efficiency}%</span>
-                </div>
-                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    style={{ width: `${efficiency}%` }}
-                    className="h-full bg-linear-to-r from-solar-yellow to-solar-gold rounded-full transition-all duration-500"
-                  />
-                </div>
-            </div>
-        )
-    }
-  },
-  {
-    id: "expander",
-    header: () => null,
-    cell: ({ row }) => {
-      return row.getCanExpand() ? (
-        <Button
-            variant="ghost"
-            onClick={row.getToggleExpandedHandler()}
-            className="h-8 w-8 p-0"
-        >
-            {row.getIsExpanded() ? (
-                <ChevronUp className="h-4 w-4" />
-            ) : (
-                <ChevronDown className="h-4 w-4" />
-            )}
-        </Button>
-      ) : null
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const plant = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigate(`/plant-admin/create`)}
-            >
-              Create Plant Admin
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(plant.id)}
-            >
-              Copy Plant ID
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate(`/grid-plant/${plant.id}/payments`)}
-            >
-                Manage Payments
-            </DropdownMenuItem>
-            <DropdownMenuItem>Edit Plant</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
 
 function PlantList() {
   const navigate = useNavigate();
+  const [plants, setPlants] = useState([]);
+  const [statistics, setStatistics] = useState({
+    totalPlants: '0',
+    totalCapacity: '0 kW',
+    todaysGeneration: '0 kWh',
+    avgEfficiency: '0%'
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [toasts, setToasts] = React.useState([]);
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  useEffect(() => {
+    fetchPlants();
+    fetchStatistics();
+  }, []);
+
+  const fetchPlants = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getAllPlants();
+      setPlants(data);
+    } catch (error) {
+      console.error('Error fetching plants:', error);
+      addToast('Failed to load plants', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const stats = await getPlantStatistics();
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    }
+  };
+
+  const columns = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "image",
+      header: "Image",
+      cell: ({ row }) => (
+        <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
+          <img
+            src={row.getValue("image")}
+            alt={row.getValue("name")}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "plantName",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => <div className="font-bold">{row.getValue("plantName")}</div>,
+    },
+    {
+      accessorKey: "location",
+      header: "Location",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-white/70">
+          <MapPin className="w-4 h-4" />
+          <span>{row.getValue("location")}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "capacity",
+      header: "Capacity",
+      cell: ({ row }) => <div className="font-medium text-solar-yellow">{row.getValue("capacity")}</div>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status");
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-black uppercase tracking-wider ${status === 'active'
+            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+            : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+            }`}>
+            {status}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: "generation",
+      header: "Generation (Today)",
+      cell: ({ row }) => <div>{row.getValue("generation")}</div>,
+    },
+    {
+      accessorKey: "efficiency",
+      header: "Efficiency",
+      cell: ({ row }) => {
+        const efficiency = row.getValue("efficiency");
+        return (
+          <div className="w-[120px]">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-medium text-solar-yellow">{efficiency}%</span>
+            </div>
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                style={{ width: `${efficiency}%` }}
+                className="h-full bg-linear-to-r from-solar-yellow to-solar-gold rounded-full transition-all duration-500"
+              />
+            </div>
+          </div>
+        )
+      }
+    },
+    {
+      id: "expander",
+      header: () => null,
+      cell: ({ row }) => {
+        return row.getCanExpand() ? (
+          <Button
+            variant="ghost"
+            onClick={row.getToggleExpandedHandler()}
+            className="h-8 w-8 p-0"
+          >
+            {row.getIsExpanded() ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        ) : null
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const plant = row.original
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigate(`/plant-admin/create`)}
+              >
+                Create Plant Admin
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(plant.id)}
+              >
+                Copy Plant ID
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate(`/grid-plant/${plant.id}/payments`)}
+              >
+                Manage Payments
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/grid-plant/edit', { state: { plantId: plant.id } })}>Edit Plant</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
@@ -201,7 +248,7 @@ function PlantList() {
       <div className="cinematic-vignette" />
 
       {/* Background Gradient */}
-      <div 
+      <div
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)'
@@ -234,8 +281,8 @@ function PlantList() {
                 Your <span className="text-solar-yellow">Plants</span>
               </h1>
             </div>
-            
-            <Button 
+
+            <Button
               onClick={() => navigate('/grid-plant/create')}
               variant="default"
               size="lg"
@@ -255,10 +302,10 @@ function PlantList() {
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12"
         >
           {[
-            { label: 'Total Plants', value: '3', icon: Sun },
-            { label: 'Total Capacity', value: '85 kW', icon: Zap },
-            { label: 'Today\'s Generation', value: '256 kWh', icon: Activity },
-            { label: 'Avg Efficiency', value: '92.8%', icon: Battery },
+            { label: 'Total Plants', value: statistics.totalPlants, icon: Sun },
+            { label: 'Total Capacity', value: statistics.totalCapacity, icon: Zap },
+            { label: 'Today\'s Generation', value: statistics.todaysGeneration, icon: Activity },
+            { label: 'Avg Efficiency', value: statistics.avgEfficiency, icon: Battery },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -282,39 +329,46 @@ function PlantList() {
 
         {/* Data Table Section */}
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="glass rounded-2xl p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="glass rounded-2xl p-6"
         >
-            <DataTable 
-                columns={columns} 
-                data={mockPlants} 
-                searchKey="name"
-                renderSubComponent={({ row }) => (
-                    <div className="p-4 bg-black/20 rounded-lg m-2 border border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                            <p className="text-xs text-white/40 uppercase">Installation Date</p>
-                            <p className="font-semibold">{row.original.details.installationDate}</p>
-                        </div>
-                         <div>
-                            <p className="text-xs text-white/40 uppercase">Panel Type</p>
-                            <p className="font-semibold">{row.original.details.panelType}</p>
-                        </div>
-                         <div>
-                            <p className="text-xs text-white/40 uppercase">Inverter Model</p>
-                            <p className="font-semibold">{row.original.details.inverterModel}</p>
-                        </div>
-                         <div>
-                            <p className="text-xs text-white/40 uppercase">Last Maintenance</p>
-                            <p className="font-semibold">{row.original.details.lastMaintenance}</p>
-                        </div>
-                    </div>
-                )}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-solar-yellow animate-spin" />
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={plants}
+              searchKey="plantName"
+              renderSubComponent={({ row }) => (
+                <div className="p-4 bg-black/20 rounded-lg m-2 border border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-xs text-white/40 uppercase">Connection Date</p>
+                    <p className="font-semibold">{row.original.connectionDate || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/40 uppercase">Inverter Make</p>
+                    <p className="font-semibold">{row.original.inverterMake || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/40 uppercase">Owner Name</p>
+                    <p className="font-semibold">{row.original.ownerName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/40 uppercase">Owner Phone</p>
+                    <p className="font-semibold">{row.original.ownerPhone || 'N/A'}</p>
+                  </div>
+                </div>
+              )}
             />
+          )}
         </motion.div>
 
       </div>
+      <Toaster toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }
