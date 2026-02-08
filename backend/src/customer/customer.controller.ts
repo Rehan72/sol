@@ -38,21 +38,21 @@ export class CustomerController {
 
   @Post('assign-survey')
   @UseGuards(AccessTokenGuard, RolesGuard)
-  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
   async assignSurvey(@Body() body: { customerId: string; teamId: string }, @Req() req: any) {
     return this.customerService.assignSurveyTeam(body.customerId, body.teamId, req.user.id);
   }
 
   @Get('solar-requests')
   @UseGuards(AccessTokenGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
   async getSolarRequests(@Req() req: any) {
     return this.customerService.getSolarRequests(req.user);
   }
 
   @Get()
   @UseGuards(AccessTokenGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
   async getAllCustomers(@Req() req: any) {
     return this.customerService.getAllCustomers(req.user);
   }

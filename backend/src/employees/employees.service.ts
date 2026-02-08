@@ -19,7 +19,7 @@ export class EmployeesService {
         const employee = this.usersRepository.create({
             ...rest,
             password: hashedPassword,
-            role: Role.EMPLOYEE,
+            role: rest.role || Role.EMPLOYEE,
         });
 
         return this.usersRepository.save(employee);

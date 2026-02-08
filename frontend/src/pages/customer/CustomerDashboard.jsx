@@ -72,23 +72,32 @@ const CustomerDashboard = () => {
         if (data) {
           const progressSteps = [
             { id: 1, title: 'Request Submitted', completed: true },
-            { id: 2, title: 'Survey Assigned', completed: data.surveyStatus === 'ASSIGNED' || data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED' },
+            {
+              id: 2,
+              title: 'Survey Assigned',
+              completed: data.surveyStatus === 'ASSIGNED' || data.surveyStatus === 'COMPLETED' || !!data.quotation || data.installationStatus === 'ACTIVATED',
+              current: data.surveyStatus === 'PENDING' && data.installationStatus === 'ONBOARDED'
+            },
             {
               id: 3, title: 'Site Survey',
-              completed: data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED',
-              current: data.surveyStatus === 'ASSIGNED' && data.installationStatus === 'ONBOARDED'
+              completed: data.surveyStatus === 'COMPLETED' || !!data.quotation || data.installationStatus === 'ACTIVATED',
+              current: data.surveyStatus === 'ASSIGNED'
             },
             {
               id: 4, title: 'Quotation Ready',
-              completed: data.installationStatus === 'QUOTATION_READY' || data.installationStatus === 'ACTIVATED',
-              current: data.installationStatus === 'QUOTATION_READY' && !showQuote
+              completed: !!data.quotation || data.installationStatus === 'ACTIVATED',
+              current: data.surveyStatus === 'COMPLETED' && !data.quotation
             },
             {
               id: 5, title: 'Installation',
               completed: data.installationStatus === 'ACTIVATED',
-              current: (data.installationStatus === 'QUOTATION_READY' && showQuote)
+              current: !!data.quotation && data.installationStatus !== 'ACTIVATED'
             },
-            { id: 6, title: 'Solar Activated', completed: data.installationStatus === 'ACTIVATED' }
+            {
+              id: 6, title: 'Solar Activated',
+              completed: data.installationStatus === 'ACTIVATED',
+              current: data.installationStatus === 'ACTIVATED'
+            }
           ];
 
           setRequest({
@@ -141,92 +150,8 @@ const CustomerDashboard = () => {
   const isStatusClickable = profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED';
 
   return (
-    <div className="min-h-screen bg-deep-navy text-white overflow-hidden flex flex-col selection:bg-solar-yellow/30">
-      {/* AUTH-CONSISTENT BACKGROUND */}
-      <div className="fixed inset-0 z-0 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }}
-      />
-
-      {/* Subtle HUD Ambient Overlays */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-solar-yellow/5 blur-[150px] rounded-full" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="film-grain" />
-      <div className="cinematic-vignette" />
-
-      {/* FLOATING COMMAND BAR */}
-      <nav className="relative z-50 px-6 py-4">
-        <motion.div
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="max-w-7xl mx-auto glass rounded-3xl border border-white/10 px-8 py-3 flex justify-between items-center bg-white/5 backdrop-blur-2xl"
-        >
-          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 rounded-xl bg-solar-yellow/20 flex items-center justify-center border border-solar-yellow/30">
-              <Sun className="w-6 h-6 text-solar-yellow" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black tracking-tighter uppercase text-xl leading-none">Solar<span className="text-solar-yellow">Edge</span></span>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Customer Portal</span>
-            </div>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
-            {[
-              {
-                label: 'Payments',
-                icon: Wallet,
-                color: 'text-emerald-400',
-                path: '/customer/payments',
-                enabled: profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED' || showQuote
-              },
-              {
-                label: 'Invoices',
-                icon: FileText,
-                color: 'text-blue-400',
-                path: '/customer/invoices',
-                enabled: profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED' || showQuote
-              },
-              {
-                label: 'Benefits',
-                icon: Sun,
-                color: 'text-solar-yellow',
-                path: '/customer/benefits',
-                enabled: profile?.installationStatus === 'ACTIVATED' || showQuote
-              },
-              {
-                label: 'Support',
-                icon: Activity,
-                color: 'text-purple-400',
-                path: '#support',
-                enabled: true
-              }
-            ].map((item) => (
-              <Button
-                key={item.label}
-                variant="ghost"
-                size="sm"
-                disabled={!item.enabled}
-                onClick={() => item.enabled && navigate(item.path)}
-                className={`px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${item.enabled
-                  ? 'text-white border-solar-yellow/20 hover:text-solar-yellow hover:border-solar-yellow/50 hover:bg-solar-yellow/5'
-                  : 'text-white/10 border-white/5 cursor-not-allowed grayscale'
-                  }`}
-                title={!item.enabled ? `${item.label} will be available once your installation progresses.` : ''}
-              >
-                <item.icon className={`w-4 h-4 ${item.enabled ? item.color : 'text-white/10'}`} />
-                {item.label}
-              </Button>
-            ))}
-          </div>
-
-
-        </motion.div>
-      </nav>
-
-      <main className="relative z-10 flex-1 px-6 py-12 max-w-7xl mx-auto w-full space-y-12">
+    <div className="relative text-white selection:bg-solar-yellow/30">
+      <main className="relative z-10 w-full px-6 py-6 mx-auto space-y-12 max-w-7xl">
         {/* HUD HEADER */}
         <section className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/5 pb-8">
           <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>

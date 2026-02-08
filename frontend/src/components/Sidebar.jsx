@@ -15,6 +15,7 @@ import {
   Map,
   ClipboardCheck,
   History,
+  FileText,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -26,13 +27,16 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
 
   const menuItems = [
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/dashboard', allowedRoles: ['SUPER_ADMIN'] },
+    { name: 'DASHBOARD', icon: LayoutDashboard, path: '/employee-dashboard', allowedRoles: ['EMPLOYEE'] },
     { name: 'REGION ADMIN', icon: LayoutDashboard, path: '/region-admin', allowedRoles: ['SUPER_ADMIN'] },
     { name: 'GRID PLANT', icon: BugPlay, path: '/grid-plant', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
     { name: 'PLANT ADMIN', icon: BugPlay, path: '/plant-admin', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN'] },
     { name: 'DASHBOARD', icon: Users, path: '/plant-admin-dashboard', allowedRoles: ['PLANT_ADMIN'] },
     { name: 'SURVEY TEAMS', icon: Map, path: '/survey-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
+    { name: 'NEW SURVEY', icon: FileText, path: '/surveys/create', allowedRoles: ['SURVEY_TEAM', 'SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'EMPLOYEE'] },
     { name: 'INSTALLATION TEAMS', icon: Users, path: '/installation-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
-    { name: 'WORKFLOW EXECUTION', icon: ClipboardCheck, path: '/installation-workflow', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'INSTALLATION_TEAM'] },
+    { name: 'MAINTENANCE TEAMS', icon: Users, path: '/maintenance-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
+    { name: 'WORKFLOW EXECUTION', icon: ClipboardCheck, path: '/installation-workflow', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'INSTALLATION_TEAM', 'EMPLOYEE'] },
     { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },
@@ -43,7 +47,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { name: 'DEVICES', icon: HardDrive, path: '/devices', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'SECURITY', icon: ShieldAlert, path: '/security', allowedRoles: ['SUPER_ADMIN'] },
     { name: 'REPORTS', icon: PieChart, path: '/reports', allowedRoles: ['SUPER_ADMIN'] },
-    { name: 'SETTINGS', icon: Settings, path: '/settings', allowedRoles: ['SUPER_ADMIN'] },
+    { name: 'SETTINGS', icon: Settings, path: '/settings', allowedRoles: ['SUPER_ADMIN', 'EMPLOYEE'] },
   ];
 
   const filteredMenuItems = menuItems.filter(item => {

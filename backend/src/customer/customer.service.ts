@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Plant } from '../entities/plant.entity';
 import { Team } from '../entities/team.entity';
+import { Quotation } from '../entities/quotation.entity';
 import { CustomerOnboardingDto } from '../auth/dto/customerOnborading.dto';
 import { Role } from '../common/enums/role.enum';
 import { AuditService } from '../audit/audit.service';
@@ -11,9 +12,10 @@ import { AuditService } from '../audit/audit.service';
 @Injectable()
 export class CustomerService {
   constructor(
-    @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Plant) private plantRepo: Repository<Plant>,
     @InjectRepository(Team) private teamRepo: Repository<Team>,
+    @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
     private auditService: AuditService
   ) { }
 
@@ -147,12 +149,43 @@ export class CustomerService {
       }
     }
 
+    // Fetch latest Approved Quotation
+    let quotation = null;
+    const approvedQuotation = await this.quotationRepo.findOne({
+      where: {
+        survey: { customerEmail: user.email },
+        status: In(['PLANT_APPROVED', 'REGION_APPROVED', 'FINAL_APPROVED'])
+      },
+      order: { createdAt: 'DESC' },
+      relations: ['survey']
+    });
+
+    if (approvedQuotation) {
+      quotation = {
+        id: approvedQuotation.id,
+        quotationNumber: approvedQuotation.quotationNumber,
+        capacity: `${approvedQuotation.proposedSystemCapacity} kW`,
+        total: approvedQuotation.totalProjectCost,
+        subsidy: approvedQuotation.governmentSubsidy,
+        final: approvedQuotation.netProjectCost,
+        status: approvedQuotation.status,
+        breakdown: [
+          { item: 'Solar Modules', cost: approvedQuotation.costSolarModules },
+          { item: 'Inverters', cost: approvedQuotation.costInverters },
+          { item: 'Structure & Hardware', cost: approvedQuotation.costStructure },
+          { item: 'Balance of System', cost: approvedQuotation.costBOS },
+          { item: 'Installation', cost: approvedQuotation.costInstallation }
+        ]
+      };
+    }
+
     return {
       ...user,
       plantDetails,
       regionDetails,
       ...plantAdminDetails,
-      surveyTeam
+      surveyTeam,
+      quotation
     };
   }
 
@@ -187,25 +220,66 @@ export class CustomerService {
 
   async getSolarRequests(currentUser: User) {
     let query = this.usersRepo.createQueryBuilder('user')
+      .leftJoin('surveys', 'survey', 'survey.customerEmail = user.email')
+      .leftJoin('quotations', 'quotation', 'quotation.surveyId = survey.id')
+      .select('DISTINCT ON (user.id) user.id', 'user_id')
+      .addSelect('user.name', 'user_name')
+      .addSelect('user.email', 'user_email')
+      .addSelect('user.phone', 'user_phone')
+      .addSelect('user.city', 'user_city')
+      .addSelect('user.state', 'user_state')
+      .addSelect('user.propertyType', 'user_propertyType')
+      .addSelect('user.billRange', 'user_billRange')
+      .addSelect('user.installationStatus', 'user_installationStatus')
+      .addSelect('user.surveyStatus', 'user_surveyStatus')
+      .addSelect('user.createdAt', 'user_createdAt')
+      .addSelect('quotation.status', 'latestQuotationStatus')
+      .addSelect('quotation.id', 'latestQuotationId')
       .where('user.role = :role', { role: Role.CUSTOMER })
       .andWhere('user.isOnboarded = :isOnboarded', { isOnboarded: true });
 
     if (currentUser.role === Role.PLANT_ADMIN) {
-      // Plant Admin sees only customers assigned to their plant
       if (currentUser.plant?.id) {
         query = query.andWhere('user.plant ::jsonb @> :plant', { plant: { id: currentUser.plant.id } });
       } else {
-        return []; // No plant assigned to this admin, so no customers
+        return [];
       }
     }
-    // Super Admin sees all. Region Admin logic can be added here.
 
-    const customers = await query.orderBy('user.id', 'DESC').getMany(); // Using ID for arbitrary ordering, createAt preferred if avail
-    return customers;
+    const rawData = await query
+      .orderBy('user.id')
+      .addOrderBy('quotation.id', 'DESC')
+      .getRawMany();
+
+    // Map raw data to object structure
+    return rawData.map(item => ({
+      id: item.user_id,
+      name: item.user_name,
+      email: item.user_email,
+      phone: item.user_phone,
+      city: item.user_city,
+      state: item.user_state,
+      propertyType: item.user_propertyType,
+      billRange: item.user_billRange,
+      installationStatus: item.user_installationStatus,
+      surveyStatus: item.user_surveyStatus,
+      createdAt: item.user_createdAt,
+      latestQuotationStatus: item.latestQuotationStatus,
+      latestQuotationId: item.latestQuotationId
+    }));
   }
 
   async getAllCustomers(currentUser: User) {
     let query = this.usersRepo.createQueryBuilder('user')
+      .leftJoin('surveys', 'survey', 'survey.customerEmail = user.email')
+      .leftJoin('quotations', 'quotation', 'quotation.surveyId = survey.id')
+      .select('DISTINCT ON (user.id) user.id', 'user_id')
+      .addSelect('user.name', 'user_name')
+      .addSelect('user.email', 'user_email')
+      .addSelect('user.phone', 'user_phone')
+      .addSelect('user.installationStatus', 'user_installationStatus')
+      .addSelect('user.surveyStatus', 'user_surveyStatus')
+      .addSelect('quotation.status', 'latestQuotationStatus')
       .where('user.role = :role', { role: Role.CUSTOMER });
 
     if (currentUser.role === Role.PLANT_ADMIN) {
@@ -215,8 +289,20 @@ export class CustomerService {
         return [];
       }
     }
-    // Region Admin logic can be added here
 
-    return await query.orderBy('user.id', 'DESC').getMany();
+    const rawData = await query
+      .orderBy('user.id')
+      .addOrderBy('quotation.id', 'DESC')
+      .getRawMany();
+
+    return rawData.map(item => ({
+      id: item.user_id,
+      name: item.user_name,
+      email: item.user_email,
+      phone: item.user_phone,
+      installationStatus: item.user_installationStatus,
+      surveyStatus: item.user_surveyStatus,
+      latestQuotationStatus: item.latestQuotationStatus
+    }));
   }
 }

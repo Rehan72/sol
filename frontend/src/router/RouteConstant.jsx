@@ -33,6 +33,9 @@ import PlantAdminDashboard from "../pages/plants/plantAdmin/PlantAdminDashboard"
 import CreateMaintenanceTeam from "../pages/maintenanceTeam/CreateMaintenanceTeam";
 import MaintenanceTeamList from "../pages/maintenanceTeam/MaintenanceTeamList";
 import MaintenanceTeamDetail from "../pages/maintenanceTeam/MaintenanceTeamDetail";
+import CreateSurvey from "../pages/surveys/CreateSurvey";
+import ViewQuotation from "../pages/quotations/ViewQuotation";
+import EmployeeDashboard from "../pages/employees/EmployeeDashboard";
 
 export const routeParams = "management";
 
@@ -243,6 +246,21 @@ export default [
   {
     element: MaintenanceTeamDetail,
     path: `maintenance-teams/:id`,
+    exact: true
+  },
+  {
+    element: CreateSurvey,
+    path: `surveys/create`,
+    exact: true
+  },
+  {
+    element: ViewQuotation,
+    path: `quotations/:id`,
+    exact: true
+  },
+  {
+    element: EmployeeDashboard,
+    path: `employee-dashboard`,
     exact: true
   }
 

@@ -18,7 +18,8 @@ import {
     Hammer,
     Lock,
     PlayCircle,
-    MoreHorizontal
+    MoreHorizontal,
+    X
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport
@@ -98,6 +99,7 @@ function InstallationWorkflow() {
     const { customerId } = useParams();
     const [activePhase, setActivePhase] = useState('installation');
     const [activeStepId, setActiveStepId] = useState('inverter');
+    const [showTechnicalForm, setShowTechnicalForm] = useState(false);
     const [steps, setSteps] = useState([]);
     const [customerData, setCustomerData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -441,14 +443,61 @@ function InstallationWorkflow() {
                                 {customerData?.surveyStatus === 'COMPLETED' && (
                                     <div className="opacity-50 hover:opacity-100 transition-opacity">
                                         <SurveyReport data={{
-                                            basicInfo: {
-                                                siteName: customerData.plantName,
+                                            customerDetails: {
+                                                name: 'Customer Name', // Placeholder or fetch if available
+                                                id: customerId || 'CUST-001',
                                                 plantName: customerData.plantName,
-                                                address: 'Data not available', // We don't have address in customerData yet
-                                                gps: 'N/A',
-                                                surveyDate: customerData.startDate,
-                                                surveyTeam: customerData.assignedTeam.name,
+                                                address: 'Site Address' // Placeholder
+                                            },
+                                            meta: {
+                                                surveyId: 'SRV-001',
+                                                date: customerData.startDate,
+                                                surveyor: customerData.assignedTeam.name,
+                                                type: 'Physical',
                                                 status: 'Completed'
+                                            },
+                                            siteDetails: {
+                                                siteType: 'Rooftop',
+                                                roofType: 'RCC Flat',
+                                                orientation: 'South',
+                                                tilt: '20°',
+                                                shadowFreeArea: '500 sq.m',
+                                                condition: 'Good'
+                                            },
+                                            shading: {
+                                                presence: 'None',
+                                                source: 'N/A',
+                                                time: 'N/A',
+                                                seasonalImpact: 'No'
+                                            },
+                                            electrical: {
+                                                connectionType: 'LT',
+                                                sanctionedLoad: '10 kW',
+                                                dbLocation: 'Ground',
+                                                earthing: 'Yes',
+                                                netMetering: 'Feasible'
+                                            },
+                                            consumption: {
+                                                avgMonthly: '1000 kWh',
+                                                daytimeLoad: '30%',
+                                                billUploaded: 'Yes'
+                                            },
+                                            recommendations: {
+                                                systemSize: customerData.capacity,
+                                                plantType: 'On-Grid',
+                                                generation: '12000 kWh/yr',
+                                                notes: 'Standard installation.'
+                                            },
+                                            attachments: {
+                                                sitePhotos: 2,
+                                                roofPhotos: 2,
+                                                shadowAnalysis: 1,
+                                                bills: 1
+                                            },
+                                            conclusion: {
+                                                feasible: 'Yes',
+                                                remarks: 'Proceed for installation.',
+                                                readyForQuotation: 'Yes'
                                             }
                                         }} />
                                     </div>
@@ -458,7 +507,82 @@ function InstallationWorkflow() {
 
                         {/* --- INSTALLATION VIEW --- */}
                         {activePhase === 'installation' && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500 relative">
+                                {/* Technical Data Form Overlay */}
+                                {showTechnicalForm && (
+                                    <div className="absolute inset-0 z-20 bg-deep-navy/95 backdrop-blur-xl rounded-3xl p-8 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="text-xl font-bold uppercase flex items-center gap-2">
+                                                <Hammer className="text-solar-yellow" /> Technical Installation Data
+                                            </h3>
+                                            <Button variant="ghost" size="icon" onClick={() => setShowTechnicalForm(false)}>
+                                                <X className="w-5 h-5 text-white/40 hover:text-white" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+                                            {/* System Details */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">System Specifications</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-xs text-white/40 block mb-1">PV Module Make</label>
+                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="e.g. Trina Solar" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs text-white/40 block mb-1">Total Modules</label>
+                                                        <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="18" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs text-white/40 block mb-1">Inverter Serial No.</label>
+                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="SN-XXXX-YYYY" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs text-white/40 block mb-1">Inverter Capacity</label>
+                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="5 kW" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Electrical Status Checklist */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Electrical Checklist</h4>
+                                                <div className="space-y-2">
+                                                    {['ACDB Installed & Wired', 'DCDB Installed & Wired', 'Earthing Pits Ready', 'Cable Dressing Complete', 'Safety Signs Displayed'].map((item, i) => (
+                                                        <label key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                            <input type="checkbox" className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow" />
+                                                            <span className="text-sm text-white/80">{item}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Handoff Readiness */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Handoff Readiness</h4>
+                                                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                                    <label className="flex items-center gap-3 cursor-pointer">
+                                                        <input type="checkbox" className="w-5 h-5 rounded bg-deep-navy border-white/20 accent-emerald-500" />
+                                                        <div>
+                                                            <p className="font-bold text-emerald-400">Ready for Commissioning</p>
+                                                            <p className="text-xs text-white/40">Confirm that all physical installation work is complete and safe.</p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 mt-4 border-t border-white/10 flex justify-end gap-3">
+                                            <Button variant="ghost" onClick={() => setShowTechnicalForm(false)}>Cancel</Button>
+                                            <Button className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold" onClick={() => {
+                                                // Save logic mock
+                                                setShowTechnicalForm(false);
+                                            }}>
+                                                Save Details
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Header Card */}
                                 <div className="glass rounded-2xl p-6 border-l-4 border-l-solar-yellow flex flex-col md:flex-row justify-between items-center gap-6">
@@ -466,13 +590,15 @@ function InstallationWorkflow() {
                                         <h2 className="text-xl font-black uppercase tracking-wide">Installation Phase</h2>
                                         <p className="text-solar-yellow font-bold uppercase text-xs tracking-widest mt-1">Status: In Progress</p>
                                     </div>
-                                    <div className="flex items-center gap-4 text-sm text-white/60">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-4 h-4" /> {customerData?.assignedTeam?.name}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" /> Started: {customerData?.startDate}
-                                        </div>
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
+                                            onClick={() => setShowTechnicalForm(true)}
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" /> Update Technical Data
+                                        </Button>
                                     </div>
                                 </div>
 

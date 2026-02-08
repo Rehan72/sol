@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
 import { Survey } from './survey.entity';
 
 @Entity('quotations')
@@ -110,8 +110,22 @@ export class Quotation {
     warrantyInverterYears: number;
 
     // H. Status & Workflow
-    @Column({ default: 'DRAFT' })
-    status: string; // DRAFT / REVIEW_PENDING / APPROVED / REJECTED
+    @Column({
+        type: 'enum',
+        enum: ['DRAFT', 'SUBMITTED', 'PLANT_APPROVED', 'REGION_APPROVED', 'REJECTED', 'FINAL_APPROVED'],
+        default: 'DRAFT'
+    })
+    status: string;
+
+    @Column({ nullable: true })
+    currentApproverRole: string; // PLANT_ADMIN, REGION_ADMIN, SUPER_ADMIN
+
+    @Column({ type: 'float', nullable: true })
+    roi: number; // Return on Investment %
+
+    @ManyToOne('User')
+    @JoinColumn({ name: 'createdById' })
+    createdBy: any;
 
     @Column({ type: 'int', default: 1 })
     version: number;

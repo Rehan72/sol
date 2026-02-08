@@ -20,7 +20,7 @@ export class WorkflowController {
 
     @Put('step/:stepId')
     @UseGuards(AccessTokenGuard, RolesGuard)
-    @Roles(Role.INSTALLATION_TEAM, Role.SURVEY_TEAM, Role.SUPER_ADMIN, Role.PLANT_ADMIN)
+    @Roles(Role.INSTALLATION_TEAM, Role.SURVEY_TEAM, Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.EMPLOYEE)
     async updateStep(
         @Param('stepId') stepId: string,
         @Body() body: { status: string; notes?: string },

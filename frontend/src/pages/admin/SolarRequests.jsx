@@ -24,6 +24,8 @@ import DateTimePicker from '../../components/ui/DateTimePicker';
 import { useNavigate } from 'react-router-dom';
 import { getSolarRequests, assignSurvey } from '../../api/customer';
 import { getTeams } from '../../api/teams';
+import { approveQuotation } from '../../api/quotations';
+import { useAuthStore } from '../../store/authStore';
 import Toaster from '../../components/ui/Toaster';
 
 const SolarRequests = () => {
@@ -64,6 +66,8 @@ const SolarRequests = () => {
                     type: customer.propertyType || 'Residential',
                     bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
                     status: mapStatus(customer),
+                    latestQuotationStatus: customer.latestQuotationStatus,
+                    latestQuotationId: customer.latestQuotationId,
                     date: new Date(customer.createdAt).toLocaleDateString(),
                     // Mocking some fields for now as they might not exist in backend yet or need complex logic
                     feasibility: 'Pending'
@@ -94,6 +98,12 @@ const SolarRequests = () => {
     }, []);
 
     const mapStatus = (customer) => {
+        if (customer.latestQuotationStatus === 'SUBMITTED') return 'Quotation Submitted';
+        if (customer.latestQuotationStatus === 'PLANT_APPROVED') return 'Approved (Plant)';
+        if (customer.latestQuotationStatus === 'REGION_APPROVED') return 'Approved (Region)';
+        if (customer.latestQuotationStatus === 'FINAL_APPROVED') return 'Final Approved';
+        if (customer.latestQuotationStatus === 'REJECTED') return 'Quotation Rejected';
+
         if (customer.installationStatus === 'QUOTATION_READY') return 'Survey Completed';
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
@@ -106,6 +116,8 @@ const SolarRequests = () => {
             setModalType('assign_survey');
         } else if (lead.status === 'Survey Completed') {
             setModalType('create_quote');
+        } else if (lead.status === 'Quotation Submitted') {
+            navigate(`/quotations/${lead.latestQuotationId}`);
         }
     };
 
@@ -145,6 +157,39 @@ const SolarRequests = () => {
         } catch (error) {
             console.error(error);
             addToast("Failed to assign team", 'error');
+        }
+    };
+
+    const handleQuickApprove = async (lead) => {
+        if (!lead.latestQuotationId) {
+            addToast("No quotation found for this lead", 'error');
+            return;
+        }
+        try {
+            setIsLoading(true);
+            await approveQuotation(lead.latestQuotationId, "Quick approved from Solar Requests page");
+            addToast("Quotation Approved successfully!", 'success');
+
+            // Refresh leads
+            const data = await getSolarRequests();
+            const mappedLeads = data.map(customer => ({
+                id: customer.id,
+                name: customer.name || 'Unknown',
+                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
+                type: customer.propertyType || 'Residential',
+                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
+                status: mapStatus(customer),
+                latestQuotationStatus: customer.latestQuotationStatus,
+                latestQuotationId: customer.latestQuotationId,
+                date: new Date(customer.createdAt).toLocaleDateString(),
+                feasibility: 'Pending'
+            }));
+            setLeads(mappedLeads);
+        } catch (error) {
+            console.error(error);
+            addToast(error.response?.data?.message || "Failed to approve quotation", 'error');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -225,29 +270,44 @@ const SolarRequests = () => {
                                     <p className="text-xs uppercase font-bold text-white/30">Status</p>
                                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase mt-1 ${lead.status === 'New Request' ? 'bg-solar-yellow/10 text-solar-yellow border border-solar-yellow/20' :
                                         lead.status === 'Survey Assigned' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                            lead.status === 'Survey Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                'bg-white/10 text-white/60'
+                                            lead.status === 'Survey Completed' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                                                lead.status === 'Quotation Submitted' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                                                    lead.status.includes('Approved') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                        'bg-white/10 text-white/60'
                                         }`}>
                                         {lead.status}
                                     </span>
                                 </div>
 
-                                <Button
-                                    onClick={() => handleAction(lead)}
-                                    className={`min-w-[140px] border border-white/10 text-white ${lead.status === 'New Request' ? 'bg-solar-yellow text-deep-navy hover:bg-gold font-bold border-none' :
-                                        lead.status === 'Survey Completed' ? 'bg-emerald-600 hover:bg-emerald-700 font-bold border-none' :
-                                            'bg-white/5 hover:bg-white/10'
-                                        }`}
-                                    disabled={false}
-                                >
-                                    {lead.status === 'New Request' && <>Assign Survey <ArrowRight className="w-4 h-4 ml-2" /></>}
-                                    {lead.status === 'Survey Assigned' && (
-                                        <div onClick={(e) => { e.stopPropagation(); navigate('/installation-workflow'); }} className="flex items-center cursor-pointer">
-                                            View Workflow <ArrowRight className="w-4 h-4 ml-2" />
-                                        </div>
+                                <div className="flex flex-col gap-2">
+                                    <Button
+                                        onClick={() => handleAction(lead)}
+                                        className={`min-w-[140px] border border-white/10 text-white ${lead.status === 'New Request' ? 'bg-solar-yellow text-deep-navy hover:bg-gold font-bold border-none' :
+                                            lead.status === 'Survey Completed' ? 'bg-indigo-600 hover:bg-indigo-700 font-bold border-none' :
+                                                'bg-white/5 hover:bg-white/10'
+                                            }`}
+                                        disabled={false}
+                                    >
+                                        {lead.status === 'New Request' && <>Assign Survey <ArrowRight className="w-4 h-4 ml-2" /></>}
+                                        {lead.status === 'Survey Assigned' && (
+                                            <div onClick={(e) => { e.stopPropagation(); navigate('/installation-workflow'); }} className="flex items-center cursor-pointer">
+                                                View Workflow <ArrowRight className="w-4 h-4 ml-2" />
+                                            </div>
+                                        )}
+                                        {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> Create Quote</>}
+                                        {lead.status === 'Quotation Submitted' && <><FileText className="w-4 h-4 mr-2" /> View Quote</>}
+                                        {lead.status.includes('Approved') && <><CheckCircle2 className="w-4 h-4 mr-2" /> Verified</>}
+                                    </Button>
+
+                                    {lead.status === 'Quotation Submitted' && (useAuthStore.getState().user?.role === 'PLANT_ADMIN' || useAuthStore.getState().user?.role === 'SUPER_ADMIN') && (
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); handleQuickApprove(lead); }}
+                                            className="min-w-[140px] bg-emerald-500 text-deep-navy font-bold hover:bg-emerald-400 border-none"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4 mr-2" /> Quick Approve
+                                        </Button>
                                     )}
-                                    {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> Create Quote</>}
-                                </Button>
+                                </div>
                             </div>
                         </motion.div>
                     ))}

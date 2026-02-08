@@ -11,6 +11,8 @@ import { EmployeesModule } from './employees/employees.module';
 import { TeamsModule } from './teams/teams.module';
 import { AuditModule } from './audit/audit.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { SurveysModule } from './surveys/surveys.module';
+import { QuotationsModule } from './quotations/quotations.module';
 
 @Module({
     imports: [
@@ -39,6 +41,8 @@ import { WorkflowModule } from './workflow/workflow.module';
         TeamsModule,
         AuditModule,
         WorkflowModule,
+        SurveysModule,
+        QuotationsModule,
     ],
 })
 export class AppModule { }
