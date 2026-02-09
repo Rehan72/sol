@@ -61,7 +61,7 @@ export class SurveysService {
 
             if (customer) {
                 customer.surveyStatus = 'COMPLETED';
-                customer.installationStatus = 'SURVEY_COMPLETED';
+                customer.installationStatus = 'QUOTATION_READY';
                 await this.userRepository.save(customer);
             }
         }

@@ -39,3 +39,7 @@ export const generateQuotationPdf = async (id) => {
     const response = await client.get(`/quotations/${id}/pdf`);
     return response.data; // Expecting { base64: ..., filename: ... }
 };
+export const finalApproveQuotation = async (id) => {
+    const response = await client.post(`/quotations/${id}/final-approve`);
+    return response.data;
+};

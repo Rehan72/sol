@@ -75,11 +75,12 @@ export class QuotationsService {
     async approve(id: number, user: any, remarks: string) {
         const quotation = await this.findOne(id);
 
-        if (quotation.status !== 'SUBMITTED' && quotation.status !== 'PLANT_APPROVED') {
-            throw new BadRequestException('Quotation is not in an approvable state.');
+        console.log(`Approving Quotation ID: ${id}, Current Status: ${quotation.status}, User Role: ${user.role}`);
+        if (quotation.status !== 'DRAFT' && quotation.status !== 'SUBMITTED' && quotation.status !== 'PLANT_APPROVED') {
+            throw new BadRequestException(`Quotation is not in an approvable state. Current status: ${quotation.status}`);
         }
 
-        if (quotation.status === 'SUBMITTED') {
+        if (quotation.status === 'DRAFT' || quotation.status === 'SUBMITTED') {
             if (user.role !== Role.PLANT_ADMIN && user.role !== Role.SUPER_ADMIN) {
                 throw new ForbiddenException('Only Plant Admin can approve at this stage.');
             }

@@ -24,7 +24,7 @@ import DateTimePicker from '../../components/ui/DateTimePicker';
 import { useNavigate } from 'react-router-dom';
 import { getSolarRequests, assignSurvey } from '../../api/customer';
 import { getTeams } from '../../api/teams';
-import { approveQuotation } from '../../api/quotations';
+import { approveQuotation, finalApproveQuotation } from '../../api/quotations';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 
@@ -35,8 +35,8 @@ const SolarRequests = () => {
     const [selectedLead, setSelectedLead] = useState(null);
     const [modalType, setModalType] = useState(null); // 'assign_survey' | 'create_quote' | 'create_lead'
 
-
-
+    console.log(leads, "leads");
+    console.log(useAuthStore.getState().role, "selectedLead");
     const [teams, setTeams] = useState([]);
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const { addToast } = useToast();
@@ -88,15 +88,19 @@ const SolarRequests = () => {
     }, []);
 
     const mapStatus = (customer) => {
-        if (customer.latestQuotationStatus === 'SUBMITTED') return 'Quotation Submitted';
-        if (customer.latestQuotationStatus === 'PLANT_APPROVED') return 'Approved (Plant)';
-        if (customer.latestQuotationStatus === 'REGION_APPROVED') return 'Approved (Region)';
+        // Higher Priority: Quotation Workflow
         if (customer.latestQuotationStatus === 'FINAL_APPROVED') return 'Final Approved';
+        if (customer.latestQuotationStatus === 'REGION_APPROVED') return 'Approved (Region)';
+        if (customer.latestQuotationStatus === 'PLANT_APPROVED') return 'Approved (Plant)';
+        if (customer.latestQuotationStatus === 'SUBMITTED') return 'Quotation Submitted';
         if (customer.latestQuotationStatus === 'REJECTED') return 'Quotation Rejected';
+        if (customer.latestQuotationStatus === 'DRAFT') return 'Survey Completed';
 
-        if (customer.installationStatus === 'QUOTATION_READY') return 'Survey Completed';
+        // Lower Priority: Installation/Survey Workflow
+        if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED') return 'Survey Completed';
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
+
         return customer.installationStatus || 'Unknown';
     };
 
@@ -105,9 +109,15 @@ const SolarRequests = () => {
         if (lead.status === 'New Request') {
             setModalType('assign_survey');
         } else if (lead.status === 'Survey Completed') {
-            setModalType('create_quote');
-        } else if (lead.status === 'Quotation Submitted') {
-            navigate(`/quotations/${lead.latestQuotationId}`);
+            if (lead.latestQuotationId) {
+                navigate(`/quotations/${lead.latestQuotationId}`);
+            } else {
+                setModalType('create_quote');
+            }
+        } else if (lead.status === 'Quotation Submitted' || lead.status === 'Approved (Plant)' || lead.status === 'Approved (Region)') {
+            if (lead.latestQuotationId) {
+                navigate(`/quotations/${lead.latestQuotationId}`);
+            }
         }
     };
 
@@ -151,13 +161,17 @@ const SolarRequests = () => {
     };
 
     const handleQuickApprove = async (lead) => {
-        if (!lead.latestQuotationId) {
-            addToast("No quotation found for this lead", 'error');
-            return;
-        }
+        console.log("Quick Approve Lead:", lead);
         try {
             setIsLoading(true);
-            await approveQuotation(lead.latestQuotationId, "Quick approved from Solar Requests page");
+
+
+
+            if (lead.latestQuotationStatus === 'REGION_APPROVED') {
+                await finalApproveQuotation(lead.latestQuotationId);
+            } else {
+                await approveQuotation(lead.latestQuotationId, "Quick approved from Solar Requests page Plant Admin");
+            }
             addToast("Quotation Approved successfully!", 'success');
 
             // Refresh leads
@@ -266,8 +280,7 @@ const SolarRequests = () => {
                                         }`}>
                                         {lead.status}
                                     </span>
-                                </div>
-
+                                </div>                                          
                                 <div className="flex flex-col gap-2">
                                     <Button
                                         onClick={() => handleAction(lead)}
@@ -283,19 +296,26 @@ const SolarRequests = () => {
                                                 View Workflow <ArrowRight className="w-4 h-4 ml-2" />
                                             </div>
                                         )}
-                                        {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> Create Quote</>}
+                                        {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> {lead.latestQuotationId ? 'Review Quote' : 'Create Quote'}</>}
                                         {lead.status === 'Quotation Submitted' && <><FileText className="w-4 h-4 mr-2" /> View Quote</>}
                                         {lead.status.includes('Approved') && <><CheckCircle2 className="w-4 h-4 mr-2" /> Verified</>}
                                     </Button>
 
-                                    {lead.status === 'Quotation Submitted' && (useAuthStore.getState().user?.role === 'PLANT_ADMIN' || useAuthStore.getState().user?.role === 'SUPER_ADMIN') && (
-                                        <Button
-                                            onClick={(e) => { e.stopPropagation(); handleQuickApprove(lead); }}
-                                            className="min-w-[140px] bg-emerald-500 text-deep-navy font-bold hover:bg-emerald-400 border-none"
-                                        >
-                                            <CheckCircle2 className="w-4 h-4 mr-2" /> Quick Approve
-                                        </Button>
-                                    )}
+                                    {/* Quick Approve Buttons for different stages/roles */}
+                                    {((lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
+                                        (lead.status === 'Quotation Submitted' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
+                                        (lead.status === 'Approved (Plant)' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
+                                        (lead.status === 'Approved (Region)' && useAuthStore.getState()?.role === 'SUPER_ADMIN')) && (
+                                            <Button
+                                                onClick={(e) => { e.stopPropagation(); handleQuickApprove(lead); }}
+                                                className="min-w-[140px] bg-emerald-500 text-deep-navy font-bold hover:bg-emerald-400 border-none"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                {lead.latestQuotationStatus === "DRAFT" ? 'Approve (Plant)' :
+                                                    lead.latestQuotationStatus === "PLANT_APPROVED" ? 'Approve (Region)' :
+                                                        'Final Approve'}
+                                            </Button>
+                                        )}
                                 </div>
                             </div>
                         </motion.div>

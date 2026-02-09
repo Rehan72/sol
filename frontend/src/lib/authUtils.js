@@ -11,7 +11,7 @@ export const getRedirectPath = (role) => {
     case 'CUSTOMER':
       return '/customer/setup';
     case 'EMPLOYEE':
-      return '/installation-workflow';
+      return '/employee-dashboard';
     default:
       return '/dashboard'; // Fallback
   }

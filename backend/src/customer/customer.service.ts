@@ -219,38 +219,42 @@ export class CustomerService {
   }
 
   async getSolarRequests(currentUser: User) {
-    let query = this.usersRepo.createQueryBuilder('user')
-      .leftJoin('surveys', 'survey', 'survey.customerEmail = user.email')
-      .leftJoin('quotations', 'quotation', 'quotation.surveyId = survey.id')
-      .select('DISTINCT ON (user.id) user.id', 'user_id')
-      .addSelect('user.name', 'user_name')
-      .addSelect('user.email', 'user_email')
-      .addSelect('user.phone', 'user_phone')
-      .addSelect('user.city', 'user_city')
-      .addSelect('user.state', 'user_state')
-      .addSelect('user.propertyType', 'user_propertyType')
-      .addSelect('user.billRange', 'user_billRange')
-      .addSelect('user.installationStatus', 'user_installationStatus')
-      .addSelect('user.surveyStatus', 'user_surveyStatus')
-      .addSelect('user.createdAt', 'user_createdAt')
-      .addSelect('quotation.status', 'latestQuotationStatus')
-      .addSelect('quotation.id', 'latestQuotationId')
-      .where('user.role = :role', { role: Role.CUSTOMER })
-      .andWhere('user.isOnboarded = :isOnboarded', { isOnboarded: true });
+    let sql = `
+      SELECT DISTINCT ON (u.id)
+        u.id AS user_id,
+        u.name AS user_name,
+        u.email AS user_email,
+        u.phone AS user_phone,
+        u.city AS user_city,
+        u.state AS user_state,
+        u."propertyType" AS "user_propertyType",
+        u."billRange" AS "user_billRange",
+        u."installationStatus" AS "user_installationStatus",
+        u."surveyStatus" AS "user_surveyStatus",
+        u."createdAt" AS "user_createdAt",
+        q.id AS "latestQuotationId",
+        q.status AS "latestQuotationStatus"
+      FROM users u
+      LEFT JOIN surveys s ON s."customerEmail" = u.email
+      LEFT JOIN quotations q ON q."surveyId" = s.id
+      WHERE u.role = $1 AND u."isOnboarded" = $2
+    `;
+
+    const params: any[] = [Role.CUSTOMER, true];
 
     if (currentUser.role === Role.PLANT_ADMIN) {
       if (currentUser.plant?.id) {
-        query = query.andWhere('user.plant ::jsonb @> :plant', { plant: { id: currentUser.plant.id } });
+        sql += ` AND u.plant->>'id' = $3`;
+        params.push(currentUser.plant.id);
       } else {
         return [];
       }
     }
 
-    const rawData = await query
-      .orderBy('user.id')
-      .addOrderBy('quotation.id', 'DESC')
-      .getRawMany();
+    sql += ` ORDER BY u.id, q.id DESC`;
 
+    const rawData = await this.usersRepo.manager.query(sql, params);
+    
     // Map raw data to object structure
     return rawData.map(item => ({
       id: item.user_id,
@@ -270,30 +274,35 @@ export class CustomerService {
   }
 
   async getAllCustomers(currentUser: User) {
-    let query = this.usersRepo.createQueryBuilder('user')
-      .leftJoin('surveys', 'survey', 'survey.customerEmail = user.email')
-      .leftJoin('quotations', 'quotation', 'quotation.surveyId = survey.id')
-      .select('DISTINCT ON (user.id) user.id', 'user_id')
-      .addSelect('user.name', 'user_name')
-      .addSelect('user.email', 'user_email')
-      .addSelect('user.phone', 'user_phone')
-      .addSelect('user.installationStatus', 'user_installationStatus')
-      .addSelect('user.surveyStatus', 'user_surveyStatus')
-      .addSelect('quotation.status', 'latestQuotationStatus')
-      .where('user.role = :role', { role: Role.CUSTOMER });
+    let sql = `
+      SELECT DISTINCT ON (u.id)
+        u.id AS user_id,
+        u.name AS user_name,
+        u.email AS user_email,
+        u.phone AS user_phone,
+        u."installationStatus" AS "user_installationStatus",
+        u."surveyStatus" AS "user_surveyStatus",
+        q.status AS "latestQuotationStatus"
+      FROM users u
+      LEFT JOIN surveys s ON s."customerEmail" = u.email
+      LEFT JOIN quotations q ON q."surveyId" = s.id
+      WHERE u.role = $1
+    `;
+
+    const params: any[] = [Role.CUSTOMER];
 
     if (currentUser.role === Role.PLANT_ADMIN) {
       if (currentUser.plant?.id) {
-        query = query.andWhere('user.plant ::jsonb @> :plant', { plant: { id: currentUser.plant.id } });
+        sql += ` AND u.plant->>'id' = $2`;
+        params.push(currentUser.plant.id);
       } else {
         return [];
       }
     }
 
-    const rawData = await query
-      .orderBy('user.id')
-      .addOrderBy('quotation.id', 'DESC')
-      .getRawMany();
+    sql += ` ORDER BY u.id, q.id DESC`;
+
+    const rawData = await this.usersRepo.manager.query(sql, params);
 
     return rawData.map(item => ({
       id: item.user_id,

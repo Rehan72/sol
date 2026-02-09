@@ -44,6 +44,7 @@ function CreateSurveyTeam() {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
   const [existingUsers, setExistingUsers] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const { addToast } = useToast();
 
   // Form State

@@ -318,7 +318,10 @@ const CustomerDashboard = () => {
                       <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1">Total Due</p>
                       <p className="text-4xl font-black">₹{request.quotation.final.toLocaleString()}</p>
                     </div>
-                    <Button className="w-full bg-emerald-500 text-deep-navy font-black py-7 rounded-xl hover:bg-emerald-400 transition-all uppercase tracking-[0.2em] text-[10px]">
+                    <Button 
+                      onClick={() => navigate('/customer/payments')}
+                      className="w-full bg-emerald-500 text-deep-navy font-black py-7 rounded-xl hover:bg-emerald-400 transition-all uppercase tracking-[0.2em] text-[10px]"
+                    >
                       Proceed to Payment <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
