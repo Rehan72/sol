@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    ArrowLeft, 
-    Wallet, 
-    CheckCircle2, 
-    Lock, 
-    ShieldCheck, 
+import {
+    ArrowLeft,
+    Wallet,
+    CheckCircle2,
+    Lock,
+    ShieldCheck,
     Banknote,
     Calculator,
     Loader2,
@@ -43,7 +43,7 @@ const CustomerPayments = () => {
         try {
             setLoading(true);
             const profile = await getCustomerProfile();
-            
+
             // Fetch actual payments from database
             let payments = [];
             try {
@@ -52,23 +52,16 @@ const CustomerPayments = () => {
             } catch (err) {
                 console.warn('Could not fetch payments:', err);
             }
-            
+
             if (profile.quotation && profile.quotation.total > 0) {
                 setQuotation(profile.quotation);
                 generateMilestones(profile.quotation, profile.surveyStatus, profile.installationStatus, payments);
             } else {
-                // Show milestones with default value for testing
-                const defaultQuotation = { total: 222000, totalProjectCost: 222000, createdAt: new Date().toISOString() };
-                setQuotation(defaultQuotation);
-                generateMilestones(defaultQuotation, 'COMPLETED', 'PENDING', payments);
+                setQuotation(null);
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
-            addToast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to load payment details."
-            });
+            addToast("Failed to load payment details.", "error");
         } finally {
             setLoading(false);
         }
@@ -80,73 +73,73 @@ const CustomerPayments = () => {
 
         const baseDate = q.createdAt ? new Date(q.createdAt) : new Date();
         const formatDate = (date) => {
-        if (!date) return new Date().toISOString().split('T')[0];
-        if (typeof date === 'string') return date.split('T')[0];
-        try {
-            return new Date(date).toISOString().split('T')[0];
-        } catch {
-            return new Date().toISOString().split('T')[0];
-        }
-    };
-        
+            if (!date) return new Date().toISOString().split('T')[0];
+            if (typeof date === 'string') return date.split('T')[0];
+            try {
+                return new Date(date).toISOString().split('T')[0];
+            } catch {
+                return new Date().toISOString().split('T')[0];
+            }
+        };
+
         // Helper to add days
         const addDays = (date, days) => {
             const result = new Date(date);
             result.setDate(result.getDate() + days);
             return result;
         };
-        
+
         // Check which milestones are already paid in database
         const paidMilestones = payments
             .filter(p => p.status === 'COMPLETED')
             .map(p => p.milestoneId);
-        
+
         // Determine which milestones should be unlocked
         // M1 is DUE if survey is completed and not paid
         // M2 is DUE if M1 is paid AND installation has started
         // M3 is DUE if M2 is paid
         // M4 is DUE if M3 is paid
-        
+
         const isM1Paid = paidMilestones.includes('M1') || surveyStatus === 'COMPLETED';
-        const isM2Unlocked = paidMilestones.includes('M1') && 
+        const isM2Unlocked = paidMilestones.includes('M1') &&
             (installationStatus === 'INSTALLATION_STARTED' || installationStatus === 'INSTALLATION_SCHEDULED');
         const isM3Unlocked = paidMilestones.includes('M2');
         const isM4Unlocked = paidMilestones.includes('M3');
-        
+
         const dynamicMilestones = [
-            { 
-                id: "M1", 
-                name: "Survey Completion", 
-                amount: Math.round(total * 0.25), 
-                status: paidMilestones.includes('M1') ? "PAID" : 
-                        (surveyStatus === 'COMPLETED' ? "DUE" : "LOCKED"), 
+            {
+                id: "M1",
+                name: "Survey Completion",
+                amount: Math.round(total * 0.25),
+                status: paidMilestones.includes('M1') ? "PAID" :
+                    (surveyStatus === 'COMPLETED' ? "DUE" : "LOCKED"),
                 description: "Payment after successful site survey and quotation approval",
                 date: paidMilestones.includes('M1') ? formatDate(payments.find(p => p.milestoneId === 'M1')?.createdAt) : formatDate(baseDate)
             },
-            { 
-                id: "M2", 
-                name: "Installation Start", 
-                amount: Math.round(total * 0.4), 
+            {
+                id: "M2",
+                name: "Installation Start",
+                amount: Math.round(total * 0.4),
                 status: paidMilestones.includes('M2') ? "PAID" :
-                        (isM2Unlocked ? "DUE" : "LOCKED"), 
+                    (isM2Unlocked ? "DUE" : "LOCKED"),
                 description: "Required before mobilization of material",
                 date: paidMilestones.includes('M2') ? formatDate(payments.find(p => p.milestoneId === 'M2')?.createdAt) : formatDate(addDays(baseDate, 15))
             },
-            { 
-                id: "M3", 
-                name: "Installation Complete", 
-                amount: Math.round(total * 0.25), 
+            {
+                id: "M3",
+                name: "Installation Complete",
+                amount: Math.round(total * 0.25),
                 status: paidMilestones.includes('M3') ? "PAID" :
-                        (isM3Unlocked ? "DUE" : "LOCKED"), 
+                    (isM3Unlocked ? "DUE" : "LOCKED"),
                 description: "Payable after physical installation is done",
                 date: paidMilestones.includes('M3') ? formatDate(payments.find(p => p.milestoneId === 'M3')?.createdAt) : formatDate(addDays(baseDate, 45))
             },
-            { 
-                id: "M4", 
-                name: "Commissioning", 
-                amount: Math.round(total * 0.1), 
+            {
+                id: "M4",
+                name: "Commissioning",
+                amount: Math.round(total * 0.1),
                 status: paidMilestones.includes('M4') ? "PAID" :
-                        (isM4Unlocked ? "DUE" : "LOCKED"), 
+                    (isM4Unlocked ? "DUE" : "LOCKED"),
                 description: "Final payment after net metering & go-live",
                 date: paidMilestones.includes('M4') ? formatDate(payments.find(p => p.milestoneId === 'M4')?.createdAt) : formatDate(addDays(baseDate, 60))
             },
@@ -168,38 +161,32 @@ const CustomerPayments = () => {
     const confirmPayment = async () => {
         // Prevent duplicate payments for the same milestone
         if (selectedMilestone?.status === 'PAID' || isProcessing) {
-            addToast({
-                title: "Already Paid",
-                description: "This milestone has already been paid."
-            });
+            addToast("This milestone has already been paid.", "info");
             setIsPaymentModalOpen(false);
             return;
         }
-        
+
         try {
             setIsProcessing(true);
-            
+
             // Get customer profile data for payment tracking
             const profile = await getCustomerProfile();
-            
+
             // Check if already paid for this milestone
             const existingPayment = milestones.find(m => m.id === selectedMilestone.id && m.status === 'PAID');
             if (existingPayment) {
-                addToast({
-                    title: "Already Paid",
-                    description: "This milestone has already been paid."
-                });
+                addToast("This milestone has already been paid.", "info");
                 setIsPaymentModalOpen(false);
                 setIsProcessing(false);
                 return;
             }
-            
+
             // Create order first
             const order = await createRazorpayOrder(selectedMilestone.amount, `receipt_${selectedMilestone.id}`);
-            
+
             // Call make-payment API - now includes customerId and plantAdminId
             const paymentResult = await makeRazorpayPayment(
-                order.id, 
+                order.id,
                 selectedMilestone.id,
                 profile.id,  // customerId
                 profile.plantDetails?.plantAdminId || profile.plantAdminId,  // plantAdminId
@@ -207,24 +194,17 @@ const CustomerPayments = () => {
                 profile.quotation?.id,  // quotationId
                 selectedMilestone.amount  // amount
             );
-            
+
             setIsPaymentModalOpen(false);
             setIsSuccessOpen(true);
-            
+
             // Refresh profile to get updated payment status
             await fetchProfile();
-            
-            addToast({
-                title: "Payment Successful",
-                description: paymentResult.message || "Your payment has been processed."
-            });
+
+            addToast(paymentResult.message || "Your payment has been processed.", "success");
         } catch (error) {
             console.error('Payment Error:', error);
-            addToast({
-                variant: "destructive",
-                title: "Payment Failed",
-                description: error.response?.data?.message || "Failed to process payment."
-            });
+            addToast(error.response?.data?.message || "Failed to process payment.", "error");
         } finally {
             setIsProcessing(false);
         }
@@ -273,9 +253,9 @@ const CustomerPayments = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+
                     {/* LEFT COLUMN: OVERVIEW */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="lg:col-span-1 space-y-6"
@@ -283,17 +263,17 @@ const CustomerPayments = () => {
                         {/* Summary Card */}
                         <div className="glass rounded-3xl p-6 border border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-32 bg-solar-yellow/5 rounded-full blur-[80px]" />
-                            
+
                             <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-6">Payment Overview</h2>
-                            
+
                             <div className="space-y-6 relative z-10">
                                 <div>
                                     <p className="text-white/60 text-sm mb-1">Total Project Cost</p>
                                     <p className="text-3xl font-black text-white">₹{totalCost.toLocaleString()}</p>
                                 </div>
-                                
+
                                 <div className="h-px bg-white/10" />
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-white/60 text-xs mb-1">Paid Amount</p>
@@ -312,7 +292,7 @@ const CustomerPayments = () => {
                                         <span className="text-solar-yellow">{Math.round(progress)}%</span>
                                     </div>
                                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                        <motion.div 
+                                        <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${progress}%` }}
                                             transition={{ duration: 1, delay: 0.5 }}
@@ -336,18 +316,17 @@ const CustomerPayments = () => {
                     {/* RIGHT COLUMN: MILESTONES */}
                     <div className="lg:col-span-2 space-y-4">
                         {milestones.map((milestone, idx) => (
-                            <motion.div 
+                            <motion.div
                                 key={milestone.id}
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: idx * 0.1 }}
-                                className={`glass rounded-2xl p-6 border transition-all duration-300 relative overflow-hidden group ${
-                                    milestone.status === 'DUE' 
-                                        ? 'border-solar-yellow/30 bg-solar-yellow/5 hover:border-solar-yellow/50' 
-                                        : milestone.status === 'PAID'
+                                className={`glass rounded-2xl p-6 border transition-all duration-300 relative overflow-hidden group ${milestone.status === 'DUE'
+                                    ? 'border-solar-yellow/30 bg-solar-yellow/5 hover:border-solar-yellow/50'
+                                    : milestone.status === 'PAID'
                                         ? 'border-emerald-500/20 bg-emerald-500/5'
                                         : 'border-white/5 bg-white/5 opacity-70'
-                                }`}
+                                    }`}
                             >
                                 {/* Active Indicator Stripe */}
                                 {milestone.status === 'DUE' && (
@@ -355,19 +334,18 @@ const CustomerPayments = () => {
                                 )}
 
                                 <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between relative z-10">
-                                    
+
                                     {/* Icon & Details */}
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${
-                                            milestone.status === 'PAID' ? 'bg-emerald-500 text-white border-emerald-400' :
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${milestone.status === 'PAID' ? 'bg-emerald-500 text-white border-emerald-400' :
                                             milestone.status === 'DUE' ? 'bg-solar-yellow text-deep-navy border-solar-yellow animate-pulse' :
-                                            'bg-white/5 text-white/30 border-white/10'
-                                        }`}>
+                                                'bg-white/5 text-white/30 border-white/10'
+                                            }`}>
                                             {milestone.status === 'PAID' ? <CheckCircle2 className="w-6 h-6" /> :
-                                             milestone.status === 'LOCKED' ? <Lock className="w-5 h-5" /> :
-                                             <Wallet className="w-6 h-6" />}
+                                                milestone.status === 'LOCKED' ? <Lock className="w-5 h-5" /> :
+                                                    <Wallet className="w-6 h-6" />}
                                         </div>
-                                        
+
                                         <div>
                                             <h3 className={`font-bold text-lg ${milestone.status === 'LOCKED' ? 'text-white/50' : 'text-white'}`}>
                                                 {milestone.name}
@@ -383,17 +361,16 @@ const CustomerPayments = () => {
                                     <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                                         <div className="text-right">
                                             <p className="text-xl font-bold font-mono text-white">₹{milestone.amount.toLocaleString()}</p>
-                                            <p className={`text-[10px] uppercase font-bold tracking-wider ${
-                                                milestone.status === 'PAID' ? 'text-emerald-400' :
+                                            <p className={`text-[10px] uppercase font-bold tracking-wider ${milestone.status === 'PAID' ? 'text-emerald-400' :
                                                 milestone.status === 'DUE' ? 'text-solar-yellow' :
-                                                'text-white/30'
-                                            }`}>
+                                                    'text-white/30'
+                                                }`}>
                                                 {milestone.status}
                                             </p>
                                         </div>
 
                                         {milestone.status === 'DUE' && (
-                                            <Button 
+                                            <Button
                                                 onClick={() => handlePayClick(milestone)}
                                                 disabled={isProcessing}
                                                 className="bg-solar-yellow text-deep-navy font-bold hover:bg-solar-yellow/90 shadow-[0_0_20px_rgba(255,215,0,0.3)]"
@@ -401,7 +378,7 @@ const CustomerPayments = () => {
                                                 {isProcessing ? 'Processing...' : 'Pay Now'}
                                             </Button>
                                         )}
-                                        
+
                                         {milestone.status === 'LOCKED' && <Lock className="w-5 h-5 text-white/10" />}
                                     </div>
                                 </div>
@@ -415,14 +392,14 @@ const CustomerPayments = () => {
             <AnimatePresence>
                 {isPaymentModalOpen && selectedMilestone && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                             onClick={() => setIsPaymentModalOpen(false)}
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
@@ -442,32 +419,31 @@ const CustomerPayments = () => {
 
                                 <div className="space-y-3 mb-8">
                                     <p className="text-xs font-bold text-white/30 uppercase">Select Payment Method</p>
-                                    
+
                                     {['UPI', 'Credit/Debit Card', 'Net Banking', 'EMI / Financing'].map((method, i) => (
                                         <div key={i}>
-                                            <label 
+                                            <label
                                                 onClick={() => {
                                                     setPaymentMethod(method);
                                                     if (method !== 'EMI / Financing') setEmiPlan(null);
                                                 }}
-                                                className={`flex items-center gap-4 p-4 rounded-xl border bg-black/20 cursor-pointer transition-all group ${
-                                                    paymentMethod === method 
-                                                    ? 'border-solar-yellow bg-solar-yellow/5' 
+                                                className={`flex items-center gap-4 p-4 rounded-xl border bg-black/20 cursor-pointer transition-all group ${paymentMethod === method
+                                                    ? 'border-solar-yellow bg-solar-yellow/5'
                                                     : 'border-white/5 hover:border-solar-yellow/50'
-                                                }`}
+                                                    }`}
                                             >
-                                                <input 
-                                                    type="radio" 
-                                                    name="payment" 
+                                                <input
+                                                    type="radio"
+                                                    name="payment"
                                                     checked={paymentMethod === method}
-                                                    onChange={() => {}}
-                                                    className="w-4 h-4 accent-solar-yellow" 
+                                                    onChange={() => { }}
+                                                    className="w-4 h-4 accent-solar-yellow"
                                                 />
                                                 <div className="flex-1 flex items-center gap-3">
-                                                    {i === 0 ? <Smartphone className="w-5 h-5 text-white/70" /> : 
-                                                     i === 1 ? <CreditCard className="w-5 h-5 text-white/70" /> : 
-                                                     i === 2 ? <Globe className="w-5 h-5 text-white/70" /> :
-                                                     <BanknoteIcon className="w-5 h-5 text-white/70" />}
+                                                    {i === 0 ? <Smartphone className="w-5 h-5 text-white/70" /> :
+                                                        i === 1 ? <CreditCard className="w-5 h-5 text-white/70" /> :
+                                                            i === 2 ? <Globe className="w-5 h-5 text-white/70" /> :
+                                                                <BanknoteIcon className="w-5 h-5 text-white/70" />}
                                                     <span className={`transition-colors ${paymentMethod === method ? 'text-solar-yellow font-bold' : 'text-white'}`}>
                                                         {method}
                                                     </span>
@@ -477,7 +453,7 @@ const CustomerPayments = () => {
 
                                             {/* EMI CALCULATOR */}
                                             {method === 'EMI / Financing' && paymentMethod === 'EMI / Financing' && (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: 'auto' }}
                                                     className="mt-2 ml-4 p-4 bg-white/5 border-l-2 border-solar-yellow rounded-r-xl"
@@ -488,19 +464,18 @@ const CustomerPayments = () => {
                                                     </div>
                                                     <div className="space-y-2">
                                                         {MOCK_EMI_PLANS.map((plan, idx) => {
-                                                            const interestAmt = (selectedMilestone.amount * plan.interest * (plan.months/12)) / 100;
+                                                            const interestAmt = (selectedMilestone.amount * plan.interest * (plan.months / 12)) / 100;
                                                             const totalAmt = selectedMilestone.amount + interestAmt;
                                                             const monthly = Math.round(totalAmt / plan.months);
 
                                                             return (
-                                                                <div 
+                                                                <div
                                                                     key={idx}
                                                                     onClick={() => setEmiPlan(plan)}
-                                                                    className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center ${
-                                                                        emiPlan === plan 
-                                                                        ? 'bg-solar-yellow/10 border-solar-yellow text-white' 
+                                                                    className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center ${emiPlan === plan
+                                                                        ? 'bg-solar-yellow/10 border-solar-yellow text-white'
                                                                         : 'bg-black/20 border-white/10 hover:bg-white/5 text-white/60'
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     <div>
                                                                         <p className="font-bold text-sm">{plan.months} Months</p>
@@ -521,8 +496,8 @@ const CustomerPayments = () => {
                                     ))}
                                 </div>
 
-                                <Button 
-                                    onClick={confirmPayment} 
+                                <Button
+                                    onClick={confirmPayment}
                                     disabled={isProcessing}
                                     className="w-full py-6 text-lg font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                                 >
@@ -538,11 +513,11 @@ const CustomerPayments = () => {
             <AnimatePresence>
                 {isSuccessOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-black/90 backdrop-blur-md"
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.5, opacity: 0 }}
@@ -551,7 +526,7 @@ const CustomerPayments = () => {
                             <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
                             </div>
-                            
+
                             <h2 className="text-3xl font-black text-white mb-2">Payment Successful!</h2>
                             <p className="text-white/60 mb-8">
                                 Your payment of <span className="text-white font-bold">₹{selectedMilestone?.amount.toLocaleString()}</span> has been received.
