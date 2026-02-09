@@ -56,4 +56,25 @@ export class CustomerController {
   async getAllCustomers(@Req() req: any) {
     return this.customerService.getAllCustomers(req.user);
   }
+
+  @Post('assign-installation')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
+  async assignInstallation(@Body() body: { customerId: string; teamId: string; startDate?: string }, @Req() req: any) {
+    return this.customerService.assignInstallationTeam(body.customerId, body.teamId, body.startDate, req.user.id);
+  }
+
+  @Post('update-installation-status')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
+  async updateInstallationStatus(@Body() body: { customerId: string; status: string }, @Req() req: any) {
+    return this.customerService.updateInstallationStatus(body.customerId, body.status);
+  }
+
+  @Post('mark-installation-ready')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
+  async markInstallationReady(@Body() body: { customerId: string }, @Req() req: any) {
+    return this.customerService.markInstallationReady(body.customerId, req.user.id);
+  }
 }

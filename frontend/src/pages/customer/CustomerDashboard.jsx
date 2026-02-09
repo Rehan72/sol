@@ -18,44 +18,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getCustomerProfile } from '../../api/customer';
 import { useAuthStore } from '../../store/authStore';
 
-const MOCK_REQUEST = {
-  id: 'SOL-2026-992',
-  type: 'Home Solar Installation',
-  location: 'Patna, Bihar',
-  property: 'Residential',
-  status: 'Survey Scheduled',
-  progress: [
-    { id: 1, title: 'Request Submitted', completed: true },
-    { id: 2, title: 'Survey Assigned', completed: true },
-    { id: 3, title: 'Survey Pending', completed: false, current: true },
-    { id: 4, title: 'Installation', completed: false },
-    { id: 5, title: 'Solar Activated', completed: false }
-  ],
-  quotation: null
-};
-
-const MOCK_QUOTATION = {
-  capacity: '5 kW',
-  breakdown: [
-    { item: 'Solar Panels (Mono PERC)', cost: 180000 },
-    { item: 'Inverter (Grid-Tied)', cost: 60000 },
-    { item: 'Structure & Wiring', cost: 40000 },
-    { item: 'Installation & Commissioning', cost: 20000 }
-  ],
-  total: 300000,
-  subsidy: 78000,
-  final: 222000
-};
-
-
-
 const CustomerDashboard = () => {
   const navigate = useNavigate();
   const { setOnboardingStatus } = useAuthStore();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showQuote, setShowQuote] = useState(false);
-  const [request, setRequest] = useState(MOCK_REQUEST);
+  const [request, setRequest] = useState({
+    id: 'Loading...',
+    type: 'Solar Installation',
+    location: 'TBD',
+    property: 'Residential',
+    status: 'Loading...',
+    progress: [],
+    quotation: null
+  });
+  console.log(request, 'request');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -119,22 +96,8 @@ const CustomerDashboard = () => {
     fetchProfile();
   }, []);
 
-  const toggleDemoState = () => {
-    if (!showQuote) {
-      setRequest({
-        ...request,
-        status: 'Quotation Received',
-        quotation: MOCK_QUOTATION,
-        progress: request.progress.map(p =>
-          p.id <= 3 ? { ...p, completed: true, current: false } :
-            p.id === 4 ? { ...p, current: true } : p
-        )
-      });
-    } else {
-      setRequest(MOCK_REQUEST);
-    }
-    setShowQuote(!showQuote);
-  };
+  const isActivated = profile?.installationStatus === 'ACTIVATED';
+  const hasQuotation = !!request.quotation;
 
   if (isLoading) {
     return (
@@ -145,9 +108,6 @@ const CustomerDashboard = () => {
       </div>
     );
   }
-
-  const isActivated = profile?.installationStatus === 'ACTIVATED' || showQuote; // showQuote for demo
-  const isStatusClickable = profile?.installationStatus === 'QUOTATION_READY' || profile?.installationStatus === 'ACTIVATED';
 
   return (
     <div className="relative text-white selection:bg-solar-yellow/30">
@@ -163,20 +123,13 @@ const CustomerDashboard = () => {
             </h1>
           </motion.div>
 
-          <Button
-            onClick={() => isStatusClickable && toggleDemoState()}
-            disabled={!isStatusClickable}
-            className={`glass px-6 py-3 h-auto rounded-xl text-[10px] font-black tracking-[0.3em] uppercase transition-all group border ${isStatusClickable
-              ? 'border-solar-yellow/20 hover:border-solar-yellow/50 hover:text-solar-yellow cursor-pointer'
-              : 'border-white/10 opacity-50 cursor-not-allowed grayscale'
-              }`}
-            title={!isStatusClickable ? 'Status details will be interactive once the quotation is ready.' : ''}
-          >
-            <span className="text-white/40 mr-2 group-hover:text-white/60">SYSTEM STATUS:</span>
-            <span className={showQuote ? 'text-solar-yellow' : 'text-emerald-400'}>
-              [{showQuote ? 'DEMO: ACTIVATED' : (profile?.installationStatus || 'PENDING')}]
-            </span>
-          </Button>
+          <div className={`glass px-6 py-3 h-auto rounded-xl text-[10px] font-black tracking-[0.3em] uppercase border ${hasQuotation
+            ? 'border-solar-yellow/20 text-emerald-400'
+            : 'border-white/10 text-white/40'
+            }`}>
+            <span className="text-white/40 mr-2">SYSTEM STATUS:</span>
+            <span>{hasQuotation ? 'QUOTATION READY' : (profile?.installationStatus || 'PENDING')}</span>
+          </div>
         </section>
 
         {/* METRIC HUD GRID - Only visible when procedure is complete */}
@@ -299,25 +252,48 @@ const CustomerDashboard = () => {
               {request.quotation && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-dark rounded-[2.5rem] p-8 border border-emerald-500/20 relative overflow-hidden">
                   <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-8">
+                    <div className="flex items-center gap-3 mb-4">
                       <Wallet className="w-6 h-6 text-emerald-400" />
                       <div>
                         <h3 className="text-xl font-black uppercase tracking-tighter">Solar Quote</h3>
-                        <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Limited Time Offer</p>
+                        <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Current Step</p>
                       </div>
                     </div>
-                    <div className="space-y-4 mb-8">
-                      {request.quotation.breakdown.map((item, i) => (
-                        <div key={i} className="flex justify-between text-xs font-bold uppercase tracking-wider">
-                          <span className="text-white/40">{item.item}</span>
-                          <span>₹{item.cost.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20 mb-8 text-center text-emerald-400">
-                      <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1">Total Due</p>
-                      <p className="text-4xl font-black">₹{request.quotation.final.toLocaleString()}</p>
-                    </div>
+                    
+                    {/* Current Milestone Display */}
+                    {(() => {
+                      const total = request.quotation.total || request.quotation.final || 0;
+                      const milestones = [
+                        { id: 'M1', name: 'Survey Completion', percentage: 0.25 },
+                        { id: 'M2', name: 'Installation Start', percentage: 0.40 },
+                        { id: 'M3', name: 'Installation Complete', percentage: 0.25 },
+                        { id: 'M4', name: 'Commissioning', percentage: 0.10 }
+                      ];
+                      
+                      // Find the first unpaid milestone (current step)
+                      const paidItems = request.quotation.breakdown?.filter(item => item.status === 'PAID') || [];
+                      const currentMilestoneIndex = Math.min(paidItems.length, milestones.length - 1);
+                      const currentMilestone = milestones[currentMilestoneIndex];
+                      const currentAmount = Math.round(total * currentMilestone.percentage);
+                      
+                      const totalRemaining = total - currentAmount;
+                     
+                      
+                      return (
+                        <>
+                          <div className="bg-solar-yellow/10 border border-solar-yellow/30 rounded-2xl p-6 mb-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-solar-yellow mb-2">{currentMilestone.name}</p>
+                            <p className="text-white/50 text-xs mb-3">Required before mobilization of material</p>
+                            <p className="text-3xl font-black text-white">₹{currentAmount.toLocaleString()}</p>
+                          </div>
+                          
+                          <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 mb-6 text-center">
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1 text-emerald-400">Total Remaining</p>
+                            <p className="text-2xl font-black text-emerald-400">₹{totalRemaining.toLocaleString()}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                     <Button 
                       onClick={() => navigate('/customer/payments')}
                       className="w-full bg-emerald-500 text-deep-navy font-black py-7 rounded-xl hover:bg-emerald-400 transition-all uppercase tracking-[0.2em] text-[10px]"

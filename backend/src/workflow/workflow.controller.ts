@@ -36,4 +36,16 @@ export class WorkflowController {
     async initWorkflow(@Param('customerId') customerId: string, @Req() req: any) {
         return this.workflowService.initializeWorkflow(customerId, req.user.id);
     }
+
+    // Endpoint to advance workflow to next phase
+    @Post('advance/:customerId')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+    async advanceWorkflowPhase(
+        @Param('customerId') customerId: string,
+        @Body() body: { phase: string },
+        @Req() req: any
+    ) {
+        return this.workflowService.advanceToPhase(customerId, body.phase, req.user.id);
+    }
 }

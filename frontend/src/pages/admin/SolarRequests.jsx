@@ -22,9 +22,10 @@ import { Button } from '../../components/ui/button';
 import Select from '../../components/ui/Select';
 import DateTimePicker from '../../components/ui/DateTimePicker';
 import { useNavigate } from 'react-router-dom';
-import { getSolarRequests, assignSurvey } from '../../api/customer';
+import { getSolarRequests, assignSurvey, assignInstallation, markInstallationReady } from '../../api/customer';
 import { getTeams } from '../../api/teams';
 import { approveQuotation, finalApproveQuotation } from '../../api/quotations';
+import { getPlantPayments } from '../../api/payments';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 
@@ -32,6 +33,7 @@ const SolarRequests = () => {
     const navigate = useNavigate();
     const [leads, setLeads] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [processingId, setProcessingId] = useState(null); // Track which lead is being processed
     const [selectedLead, setSelectedLead] = useState(null);
     const [modalType, setModalType] = useState(null); // 'assign_survey' | 'create_quote' | 'create_lead'
 
@@ -43,6 +45,9 @@ const SolarRequests = () => {
 
     const [newLead, setNewLead] = useState({ name: '', location: '', type: 'Residential', bill: '' });
     const [surveyDate, setSurveyDate] = useState(null);
+    const [payments, setPayments] = useState({}); // Map of customerId -> payments array
+    const [installationTeams, setInstallationTeams] = useState([]);
+    const [selectedInstallationTeamId, setSelectedInstallationTeamId] = useState('');
 
     useEffect(() => {
         const fetchLeads = async () => {
@@ -83,8 +88,41 @@ const SolarRequests = () => {
             }
         }
 
+        const fetchPayments = async () => {
+            try {
+                const response = await getPlantPayments();
+                const data = response?.data || response || [];
+                // Create a map of customerId -> payments
+                const paymentMap = {};
+                data.forEach(payment => {
+                    if (!paymentMap[payment.customerId]) {
+                        paymentMap[payment.customerId] = [];
+                    }
+                    paymentMap[payment.customerId].push(payment);
+                });
+                setPayments(paymentMap);
+            } catch (error) {
+                console.error("Failed to fetch payments:", error);
+            }
+        }
+
+        const fetchInstallationTeams = async () => {
+            try {
+                const data = await getTeams({ type: 'INSTALLATION' });
+                const teamOptions = data.map(team => ({
+                    value: team.id,
+                    label: `${team.name} (${team.status})`
+                }));
+                setInstallationTeams(teamOptions);
+            } catch (error) {
+                console.error("Failed to fetch installation teams:", error);
+            }
+        }
+
         fetchLeads();
         fetchTeams();
+        fetchPayments();
+        fetchInstallationTeams();
     }, []);
 
     const mapStatus = (customer) => {
@@ -97,11 +135,26 @@ const SolarRequests = () => {
         if (customer.latestQuotationStatus === 'DRAFT') return 'Survey Completed';
 
         // Lower Priority: Installation/Survey Workflow
+        if (customer.installationStatus === 'INSTALLATION_READY') return 'Payment Received';
+        if (customer.installationStatus === 'INSTALLATION_SCHEDULED') return 'Installation Scheduled';
+        if (customer.installationStatus === 'INSTALLATION_STARTED') return 'Installation Started';
         if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED') return 'Survey Completed';
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
 
         return customer.installationStatus || 'Unknown';
+    };
+
+    const getPaymentStatus = (customerId) => {
+        const customerPayments = payments[customerId] || [];
+        if (customerPayments.length === 0) return null;
+        
+        // Check if M1 (first milestone) is paid
+        const m1Payment = customerPayments.find(p => p.milestoneId === 'M1');
+        if (m1Payment && m1Payment.status === 'COMPLETED') {
+            return { paid: true, amount: m1Payment.amount, milestone: 'M1' };
+        }
+        return null;
     };
 
     const handleAction = (lead) => {
@@ -118,6 +171,8 @@ const SolarRequests = () => {
             if (lead.latestQuotationId) {
                 navigate(`/quotations/${lead.latestQuotationId}`);
             }
+        } else if (lead.status === 'Payment Received' && !lead.assignedInstallationTeam) {
+            setModalType('assign_installation');
         }
     };
 
@@ -126,6 +181,7 @@ const SolarRequests = () => {
         setSelectedLead(null);
         setSurveyDate(null);
         setSelectedTeamId('');
+        setSelectedInstallationTeamId('');
         setNewLead({ name: '', location: '', type: 'Residential', bill: '' });
     };
 
@@ -194,6 +250,70 @@ const SolarRequests = () => {
             addToast(error.response?.data?.message || "Failed to approve quotation", 'error');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleAssignInstallation = async () => {
+        if (!selectedInstallationTeamId || !selectedLead) return;
+        try {
+            await assignInstallation(selectedLead.id, selectedInstallationTeamId, surveyDate ? surveyDate.toISOString() : null);
+            
+            addToast("Installation Team Assigned successfully!", 'success');
+            
+            // Refresh leads and payments
+            const data = await getSolarRequests();
+            const mappedLeads = data.map(customer => ({
+                id: customer.id,
+                name: customer.name || 'Unknown',
+                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
+                type: customer.propertyType || 'Residential',
+                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
+                status: mapStatus(customer),
+                latestQuotationStatus: customer.latestQuotationStatus,
+                latestQuotationId: customer.latestQuotationId,
+                date: new Date(customer.createdAt).toLocaleDateString(),
+                feasibility: 'Pending'
+            }));
+            setLeads(mappedLeads);
+            
+            // Refresh payments
+            fetchPayments();
+            
+            closeModal();
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to assign installation team", 'error');
+        }
+    };
+
+    const handleMarkInstallationReady = async (lead) => {
+        try {
+            setProcessingId(lead.id);
+            await markInstallationReady(lead.id);
+            addToast("Customer marked as ready for installation!", 'success');
+            
+            // Refresh leads
+            const data = await getSolarRequests();
+            console.log('Refreshed leads data:', data.map(d => ({ id: d.id, status: d.installationStatus })));
+            const mappedLeads = data.map(customer => ({
+                id: customer.id,
+                name: customer.name || 'Unknown',
+                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
+                type: customer.propertyType || 'Residential',
+                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
+                status: mapStatus(customer),
+                latestQuotationStatus: customer.latestQuotationStatus,
+                latestQuotationId: customer.latestQuotationId,
+                date: new Date(customer.createdAt).toLocaleDateString(),
+                feasibility: 'Pending'
+            }));
+            console.log('Mapped leads with status:', mappedLeads.map(l => ({ id: l.id, status: l.status })));
+            setLeads(mappedLeads);
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to mark installation ready", 'error');
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -276,11 +396,21 @@ const SolarRequests = () => {
                                             lead.status === 'Survey Completed' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
                                                 lead.status === 'Quotation Submitted' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
                                                     lead.status.includes('Approved') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                        'bg-white/10 text-white/60'
+                                                        lead.status === 'Payment Received' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
+                                                            lead.status === 'Installation Scheduled' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                                                'bg-white/10 text-white/60'
                                         }`}>
                                         {lead.status}
                                     </span>
-                                </div>                                          
+                                </div>
+                                {getPaymentStatus(lead.id) && (
+                                    <div className="text-right">
+                                        <p className="text-xs uppercase font-bold text-white/30">Payment</p>
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase mt-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            <CheckCircle2 className="w-3 h-3" /> ₹{getPaymentStatus(lead.id).amount?.toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}                                          
                                 <div className="flex flex-col gap-2">
                                     <Button
                                         onClick={() => handleAction(lead)}
@@ -292,14 +422,40 @@ const SolarRequests = () => {
                                     >
                                         {lead.status === 'New Request' && <>Assign Survey <ArrowRight className="w-4 h-4 ml-2" /></>}
                                         {lead.status === 'Survey Assigned' && (
-                                            <div onClick={(e) => { e.stopPropagation(); navigate('/installation-workflow'); }} className="flex items-center cursor-pointer">
+                                            <span onClick={(e) => { e.stopPropagation(); navigate('/installation-workflow'); }} className="flex items-center cursor-pointer">
                                                 View Workflow <ArrowRight className="w-4 h-4 ml-2" />
-                                            </div>
+                                            </span>
                                         )}
                                         {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> {lead.latestQuotationId ? 'Review Quote' : 'Create Quote'}</>}
                                         {lead.status === 'Quotation Submitted' && <><FileText className="w-4 h-4 mr-2" /> View Quote</>}
                                         {lead.status.includes('Approved') && <><CheckCircle2 className="w-4 h-4 mr-2" /> Verified</>}
+                                        {lead.status === 'Payment Received' && <><Users className="w-4 h-4 mr-2" /> Assign Team</>}
                                     </Button>
+                                    
+                                    {/* Mark Ready Button - shown when payment is made but installation not ready */}
+                                    {getPaymentStatus(lead.id) && lead.status !== 'Payment Received' && lead.status !== 'Installation Scheduled' &&
+                                        (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); handleMarkInstallationReady(lead); }}
+                                            disabled={processingId === lead.id}
+                                            className="min-w-[140px] bg-solar-yellow text-deep-navy font-bold hover:bg-gold border-none"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                                            {processingId === lead.id ? 'Processing...' : 'Mark Ready'}
+                                        </Button>
+                                    )}
+
+                                    {/* Assign Team Button - shown when payment is received */}
+                                    {lead.status === 'Payment Received' &&
+                                        (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setModalType('assign_installation'); }}
+                                            className="min-w-[140px] bg-blue-500 text-white font-bold hover:bg-blue-600 border-none"
+                                        >
+                                            <Users className="w-4 h-4 mr-2" />
+                                            Assign Team
+                                        </Button>
+                                    )}
 
                                     {/* Quick Approve Buttons for different stages/roles */}
                                     {((lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
@@ -479,6 +635,58 @@ const SolarRequests = () => {
                                     <Button className="bg-emerald-500 text-white font-bold hover:bg-emerald-600 px-8">
                                         Send to Customer
                                     </Button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+
+                    {modalType === 'assign_installation' && (
+                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
+                                <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-blue-400" /> Assign Installation Team
+                                </h2>
+
+                                <div className="space-y-4 mb-6">
+                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex justify-between items-center">
+                                        <div>
+                                            <p className="text-emerald-400 font-bold text-sm">Payment Received!</p>
+                                            <p className="text-white/60 text-xs">₹{getPaymentStatus(selectedLead?.id)?.amount?.toLocaleString()}</p>
+                                        </div>
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase text-white/40 mb-2 block">Customer</label>
+                                        <div className="p-3 bg-white/5 rounded-lg text-white font-bold">{selectedLead?.name}</div>
+                                    </div>
+                                    <div>
+                                        <div className="relative">
+                                            <Select
+                                                name="installationTeamSelect"
+                                                label="Select Installation Team"
+                                                value={selectedInstallationTeamId}
+                                                onChange={(e) => setSelectedInstallationTeamId(e.target.value)}
+                                                options={installationTeams}
+                                                icon={Users}
+                                                placeholder="Select a team..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase text-white/40 mb-2 block">Scheduled Start Date</label>
+                                        <DateTimePicker
+                                            mode="single"
+                                            placeholder="Select Date"
+                                            value={surveyDate}
+                                            onChange={setSurveyDate}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <Button variant="ghost" onClick={closeModal} className="flex-1 text-white/50">Cancel</Button>
+                                    <Button onClick={handleAssignInstallation} className="flex-1 bg-blue-500 text-white font-bold hover:bg-blue-600">Assign Team</Button>
                                 </div>
                             </motion.div>
                         </div>

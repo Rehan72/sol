@@ -19,12 +19,13 @@ import {
     Lock,
     PlayCircle,
     MoreHorizontal,
-    X
+    X,
+    Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport
 import { useParams } from 'react-router-dom';
-import { getWorkflow, initWorkflow, updateWorkflowStep } from '../../api/workflow';
+import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase } from '../../api/workflow';
 import { getCustomerProfile } from '../../api/customer';
 
 // --- Constants & Mock Data ---
@@ -97,12 +98,13 @@ const TimelineNode = ({ phase, isLast }) => {
 function InstallationWorkflow() {
     const navigate = useNavigate();
     const { customerId } = useParams();
-    const [activePhase, setActivePhase] = useState('installation');
-    const [activeStepId, setActiveStepId] = useState('inverter');
+    const [activePhase, setActivePhase] = useState('survey');
+    const [activeStepId, setActiveStepId] = useState('mounting');
     const [showTechnicalForm, setShowTechnicalForm] = useState(false);
     const [steps, setSteps] = useState([]);
     const [customerData, setCustomerData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [advancingPhase, setAdvancingPhase] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -133,14 +135,17 @@ function InstallationWorkflow() {
                 if (profile) {
                     console.log("profile", profile);
 
-                    // Set active phase based on status
-                    // 'PENDING' is the default, so we check if it is NOT pending to activate installation
-                    if (profile.installationStatus && profile.installationStatus !== 'PENDING') {
-                        setActivePhase('installation');
-                    } else {
-                        // Default to survey for PENDING, ASSIGNED, IN_PROGRESS, or COMPLETED (if next not started)
-                        setActivePhase('survey');
+                    // Set active phase based on status - default to survey
+                    // Only move to installation if survey is completed and installation has started
+                    let initialPhase = 'survey';
+                    
+                    if (profile.surveyStatus === 'COMPLETED' && profile.installationStatus && profile.installationStatus !== 'PENDING') {
+                        initialPhase = 'installation';
+                    } else if (profile.installationStatus === 'COMPLETED') {
+                        initialPhase = 'commissioning';
                     }
+                    
+                    setActivePhase(initialPhase);
 
                     setCustomerData({
                         plantName: profile.plantDetails?.name || 'Solar Plant',
@@ -199,6 +204,29 @@ function InstallationWorkflow() {
         };
         fetchData();
     }, [customerId]);
+
+    const handleAdvancePhase = async (nextPhase) => {
+        if (!customerId) return;
+        try {
+            setAdvancingPhase(true);
+            await advanceWorkflowPhase(customerId, nextPhase);
+            
+            // Update local state to reflect the new phase
+            if (nextPhase === 'installation') {
+                setActivePhase('installation');
+                setCustomerData(prev => ({ ...prev, installationStatus: 'IN_PROGRESS' }));
+            } else if (nextPhase === 'commissioning') {
+                setActivePhase('commissioning');
+                setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
+            } else if (nextPhase === 'live') {
+                setActivePhase('live');
+            }
+        } catch (error) {
+            console.error('Failed to advance workflow phase:', error);
+        } finally {
+            setAdvancingPhase(false);
+        }
+    };
 
     const handleCompleteStep = async () => {
         const current = steps.find(s => s.id === activeStepId);
@@ -417,9 +445,19 @@ function InstallationWorkflow() {
                                             </p>
                                         </div>
                                         {customerData?.surveyStatus === 'COMPLETED' && (
-                                            <Button onClick={() => navigate('/handoff/review')} variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
-                                                <FileText className="w-4 h-4 mr-2" /> Full Report
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button onClick={() => navigate('/handoff/review')} variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                                                    <FileText className="w-4 h-4 mr-2" /> Full Report
+                                                </Button>
+                                                <Button 
+                                                    onClick={() => handleAdvancePhase('installation')} 
+                                                    disabled={advancingPhase}
+                                                    className="bg-solar-yellow text-deep-navy hover:bg-gold font-bold"
+                                                >
+                                                    <Hammer className="w-4 h-4 mr-2" /> 
+                                                    {advancingPhase ? 'Starting...' : 'Start Installation'}
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                     <p className="text-white/60 mb-6">
@@ -591,14 +629,25 @@ function InstallationWorkflow() {
                                         <p className="text-solar-yellow font-bold uppercase text-xs tracking-widest mt-1">Status: In Progress</p>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
-                                            onClick={() => setShowTechnicalForm(true)}
-                                        >
-                                            <FileText className="w-4 h-4 mr-2" /> Update Technical Data
-                                        </Button>
+                                        {steps.length > 0 && steps.every(s => s.status === 'completed') ? (
+                                            <Button 
+                                                onClick={() => handleAdvancePhase('commissioning')} 
+                                                disabled={advancingPhase}
+                                                className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
+                                            >
+                                                <Zap className="w-4 h-4 mr-2" />
+                                                {advancingPhase ? 'Advancing...' : 'Complete & Advance to Commissioning'}
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
+                                                onClick={() => setShowTechnicalForm(true)}
+                                            >
+                                                <FileText className="w-4 h-4 mr-2" /> Update Technical Data
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
 

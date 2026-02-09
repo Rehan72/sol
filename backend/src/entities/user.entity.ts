@@ -108,6 +108,12 @@ export class User {
   @Column({ nullable: true })
   assignedSurveyTeam: string;
 
+  @Column({ nullable: true })
+  assignedInstallationTeam: string;
+
+  @Column({ nullable: true })
+  installationStartDate: Date;
+
   // Employee specific fields
   @Column({ nullable: true })
   designation: string; // e.g., 'Surveyor', 'Installer'

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -6,51 +6,252 @@ import {
     Wallet, 
     CheckCircle2, 
     Lock, 
-    ChevronRight, 
-    CreditCard, 
-    Smartphone, 
-    Globe, 
     ShieldCheck, 
-    AlertTriangle,
-    Sun,
     Banknote,
-    Calculator
+    Calculator,
+    Loader2,
+    Smartphone,
+    CreditCard,
+    Globe,
+    BanknoteIcon,
+    AlertTriangle
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { MOCK_PAYMENT_MILESTONES, MOCK_EMI_PLANS } from '../../data/mockData';
+import { MOCK_EMI_PLANS } from '../../data/mockData';
+import { getCustomerProfile } from '../../api/customer';
+import { createRazorpayOrder, makeRazorpayPayment, getCustomerPayments } from '../../api/payments';
+import { useToast } from '../../hooks/useToast';
 
 const CustomerPayments = () => {
     const navigate = useNavigate();
-    const [milestones, setMilestones] = useState(MOCK_PAYMENT_MILESTONES);
+    const { addToast } = useToast();
+    const [loading, setLoading] = useState(true);
+    const [quotation, setQuotation] = useState(null);
+    const [milestones, setMilestones] = useState([]);
     const [selectedMilestone, setSelectedMilestone] = useState(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('UPI');
     const [emiPlan, setEmiPlan] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('UPI');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const profile = await getCustomerProfile();
+            
+            // Fetch actual payments from database
+            let payments = [];
+            try {
+                const paymentData = await getCustomerPayments(profile.id);
+                payments = paymentData.data || [];
+            } catch (err) {
+                console.warn('Could not fetch payments:', err);
+            }
+            
+            if (profile.quotation && profile.quotation.total > 0) {
+                setQuotation(profile.quotation);
+                generateMilestones(profile.quotation, profile.surveyStatus, profile.installationStatus, payments);
+            } else {
+                // Show milestones with default value for testing
+                const defaultQuotation = { total: 222000, totalProjectCost: 222000, createdAt: new Date().toISOString() };
+                setQuotation(defaultQuotation);
+                generateMilestones(defaultQuotation, 'COMPLETED', 'PENDING', payments);
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            addToast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to load payment details."
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const generateMilestones = (q, surveyStatus, installationStatus, payments = []) => {
+        const total = q.total || q.totalProjectCost;
+        if (!total) return []; // Safety check
+
+        const baseDate = q.createdAt ? new Date(q.createdAt) : new Date();
+        const formatDate = (date) => {
+        if (!date) return new Date().toISOString().split('T')[0];
+        if (typeof date === 'string') return date.split('T')[0];
+        try {
+            return new Date(date).toISOString().split('T')[0];
+        } catch {
+            return new Date().toISOString().split('T')[0];
+        }
+    };
+        
+        // Helper to add days
+        const addDays = (date, days) => {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        };
+        
+        // Check which milestones are already paid in database
+        const paidMilestones = payments
+            .filter(p => p.status === 'COMPLETED')
+            .map(p => p.milestoneId);
+        
+        // Determine which milestones should be unlocked
+        // M1 is DUE if survey is completed and not paid
+        // M2 is DUE if M1 is paid AND installation has started
+        // M3 is DUE if M2 is paid
+        // M4 is DUE if M3 is paid
+        
+        const isM1Paid = paidMilestones.includes('M1') || surveyStatus === 'COMPLETED';
+        const isM2Unlocked = paidMilestones.includes('M1') && 
+            (installationStatus === 'INSTALLATION_STARTED' || installationStatus === 'INSTALLATION_SCHEDULED');
+        const isM3Unlocked = paidMilestones.includes('M2');
+        const isM4Unlocked = paidMilestones.includes('M3');
+        
+        const dynamicMilestones = [
+            { 
+                id: "M1", 
+                name: "Survey Completion", 
+                amount: Math.round(total * 0.25), 
+                status: paidMilestones.includes('M1') ? "PAID" : 
+                        (surveyStatus === 'COMPLETED' ? "DUE" : "LOCKED"), 
+                description: "Payment after successful site survey and quotation approval",
+                date: paidMilestones.includes('M1') ? formatDate(payments.find(p => p.milestoneId === 'M1')?.createdAt) : formatDate(baseDate)
+            },
+            { 
+                id: "M2", 
+                name: "Installation Start", 
+                amount: Math.round(total * 0.4), 
+                status: paidMilestones.includes('M2') ? "PAID" :
+                        (isM2Unlocked ? "DUE" : "LOCKED"), 
+                description: "Required before mobilization of material",
+                date: paidMilestones.includes('M2') ? formatDate(payments.find(p => p.milestoneId === 'M2')?.createdAt) : formatDate(addDays(baseDate, 15))
+            },
+            { 
+                id: "M3", 
+                name: "Installation Complete", 
+                amount: Math.round(total * 0.25), 
+                status: paidMilestones.includes('M3') ? "PAID" :
+                        (isM3Unlocked ? "DUE" : "LOCKED"), 
+                description: "Payable after physical installation is done",
+                date: paidMilestones.includes('M3') ? formatDate(payments.find(p => p.milestoneId === 'M3')?.createdAt) : formatDate(addDays(baseDate, 45))
+            },
+            { 
+                id: "M4", 
+                name: "Commissioning", 
+                amount: Math.round(total * 0.1), 
+                status: paidMilestones.includes('M4') ? "PAID" :
+                        (isM4Unlocked ? "DUE" : "LOCKED"), 
+                description: "Final payment after net metering & go-live",
+                date: paidMilestones.includes('M4') ? formatDate(payments.find(p => p.milestoneId === 'M4')?.createdAt) : formatDate(addDays(baseDate, 60))
+            },
+        ];
+        setMilestones(dynamicMilestones);
+    };
 
     // Calculate Totals
     const totalCost = milestones.reduce((sum, m) => sum + m.amount, 0);
     const totalPaid = milestones.filter(m => m.status === 'PAID').reduce((sum, m) => sum + m.amount, 0);
     const totalRemaining = totalCost - totalPaid;
-    const progress = (totalPaid / totalCost) * 100;
+    const progress = totalCost > 0 ? (totalPaid / totalCost) * 100 : 0;
 
     const handlePayClick = (milestone) => {
         setSelectedMilestone(milestone);
         setIsPaymentModalOpen(true);
     };
 
-    const confirmPayment = () => {
-        // Simulate API Call
-        setTimeout(() => {
+    const confirmPayment = async () => {
+        // Prevent duplicate payments for the same milestone
+        if (selectedMilestone?.status === 'PAID' || isProcessing) {
+            addToast({
+                title: "Already Paid",
+                description: "This milestone has already been paid."
+            });
+            setIsPaymentModalOpen(false);
+            return;
+        }
+        
+        try {
+            setIsProcessing(true);
+            
+            // Get customer profile data for payment tracking
+            const profile = await getCustomerProfile();
+            
+            // Check if already paid for this milestone
+            const existingPayment = milestones.find(m => m.id === selectedMilestone.id && m.status === 'PAID');
+            if (existingPayment) {
+                addToast({
+                    title: "Already Paid",
+                    description: "This milestone has already been paid."
+                });
+                setIsPaymentModalOpen(false);
+                setIsProcessing(false);
+                return;
+            }
+            
+            // Create order first
+            const order = await createRazorpayOrder(selectedMilestone.amount, `receipt_${selectedMilestone.id}`);
+            
+            // Call make-payment API - now includes customerId and plantAdminId
+            const paymentResult = await makeRazorpayPayment(
+                order.id, 
+                selectedMilestone.id,
+                profile.id,  // customerId
+                profile.plantDetails?.plantAdminId || profile.plantAdminId,  // plantAdminId
+                profile.plantDetails?.id || profile.plant?.id,  // plantId
+                profile.quotation?.id,  // quotationId
+                selectedMilestone.amount  // amount
+            );
+            
             setIsPaymentModalOpen(false);
             setIsSuccessOpen(true);
             
-            // Update local state to reflect payment
-            setMilestones(prev => prev.map(m => 
-                m.id === selectedMilestone.id ? { ...m, status: 'PAID', date: new Date().toISOString().split('T')[0] } : m
-            ));
-        }, 1500);
+            // Refresh profile to get updated payment status
+            await fetchProfile();
+            
+            addToast({
+                title: "Payment Successful",
+                description: paymentResult.message || "Your payment has been processed."
+            });
+        } catch (error) {
+            console.error('Payment Error:', error);
+            addToast({
+                variant: "destructive",
+                title: "Payment Failed",
+                description: error.response?.data?.message || "Failed to process payment."
+            });
+        } finally {
+            setIsProcessing(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-deep-navy flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-solar-yellow animate-spin" />
+            </div>
+        );
+    }
+
+    if (!quotation) {
+        return (
+            <div className="min-h-screen bg-deep-navy text-white flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10">
+                    <AlertTriangle className="w-12 h-12 text-solar-yellow/50" />
+                </div>
+                <h2 className="text-3xl font-black uppercase mb-4">No Payment Data Found</h2>
+                <p className="text-white/50 max-w-md">Payments will be enabled once your site survey is completed and a quotation is approved.</p>
+                <Button onClick={() => navigate(-1)} className="mt-8 bg-white/10 hover:bg-white/20 border border-white/5">
+                    Go Back
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-deep-navy text-white overflow-hidden flex flex-col">
@@ -59,17 +260,7 @@ const CustomerPayments = () => {
             <div className="cinematic-vignette" />
             <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
 
-            {/* Navbar */}
-             <div className="relative z-50 glass border-b border-white/5 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-solar-yellow/20 flex items-center justify-center">
-                        <Sun className="w-5 h-5 text-solar-yellow" />
-                    </div>
-                    <span className="font-black tracking-tighter uppercase text-lg">Solar<span className="text-solar-yellow">Connect</span></span>
-                </div>
-            </div>
-
-            <div className="relative z-10 p-6 md:p-12 max-w-5xl mx-auto w-full flex-1">
+            <div className="relative z-10 p-6 md:p-12  mx-auto w-full flex-1">
                 {/* Header */}
                 <div className="mb-8 flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="hover:bg-white/10 rounded-full">
@@ -204,9 +395,10 @@ const CustomerPayments = () => {
                                         {milestone.status === 'DUE' && (
                                             <Button 
                                                 onClick={() => handlePayClick(milestone)}
+                                                disabled={isProcessing}
                                                 className="bg-solar-yellow text-deep-navy font-bold hover:bg-solar-yellow/90 shadow-[0_0_20px_rgba(255,215,0,0.3)]"
                                             >
-                                                Pay Now
+                                                {isProcessing ? 'Processing...' : 'Pay Now'}
                                             </Button>
                                         )}
                                         
@@ -275,7 +467,7 @@ const CustomerPayments = () => {
                                                     {i === 0 ? <Smartphone className="w-5 h-5 text-white/70" /> : 
                                                      i === 1 ? <CreditCard className="w-5 h-5 text-white/70" /> : 
                                                      i === 2 ? <Globe className="w-5 h-5 text-white/70" /> :
-                                                     <Banknote className="w-5 h-5 text-white/70" />}
+                                                     <BanknoteIcon className="w-5 h-5 text-white/70" />}
                                                     <span className={`transition-colors ${paymentMethod === method ? 'text-solar-yellow font-bold' : 'text-white'}`}>
                                                         {method}
                                                     </span>
@@ -329,8 +521,12 @@ const CustomerPayments = () => {
                                     ))}
                                 </div>
 
-                                <Button onClick={confirmPayment} className="w-full py-6 text-lg font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
-                                    Pay Securely
+                                <Button 
+                                    onClick={confirmPayment} 
+                                    disabled={isProcessing}
+                                    className="w-full py-6 text-lg font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                >
+                                    {isProcessing ? 'Processing...' : 'Pay Securely'}
                                 </Button>
                             </div>
                         </motion.div>

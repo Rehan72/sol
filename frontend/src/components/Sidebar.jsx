@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   History,
   FileText,
+  Wallet,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -40,6 +41,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },
+    { name: 'PAYMENTS', icon: Wallet, path: '/customer/payments', allowedRoles: ['CUSTOMER'] },
     { name: 'ONBOARDING', icon: ClipboardCheck, path: '/customer/setup', allowedRoles: ['CUSTOMER'] },
     { name: 'EMPLOYEES', icon: Users, path: '/employees', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'ANALYTICS', icon: Activity, path: '/analytics', allowedRoles: ['SUPER_ADMIN'] },

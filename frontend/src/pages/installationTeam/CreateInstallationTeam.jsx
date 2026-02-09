@@ -42,7 +42,7 @@ function CreateInstallationTeam() {
   const [loading, setLoading] = useState(false);
   const [existingUsers, setExistingUsers] = useState([]);
   const { addToast } = useToast();
-
+  const [customers, setCustomers] = useState([]);
   // Form State
   const [formData, setFormData] = useState({
     teamName: '',

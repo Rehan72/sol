@@ -120,6 +120,7 @@ export class CustomerService {
 
       if (plantAdmin) {
         plantAdminDetails = {
+          plantAdminId: plantAdmin.id,
           plantAdminName: plantAdmin.name,
           plantAdminPhone: plantAdmin.phone,
           plantAdminEmail: plantAdmin.email
@@ -169,12 +170,44 @@ export class CustomerService {
         subsidy: approvedQuotation.governmentSubsidy,
         final: approvedQuotation.netProjectCost,
         status: approvedQuotation.status,
+        paymentStatus: approvedQuotation.paymentStatus || {
+          solarModules: 'DUE',
+          inverters: 'DUE',
+          structure: 'DUE',
+          bos: 'DUE',
+          installation: 'DUE'
+        },
         breakdown: [
-          { item: 'Solar Modules', cost: approvedQuotation.costSolarModules },
-          { item: 'Inverters', cost: approvedQuotation.costInverters },
-          { item: 'Structure & Hardware', cost: approvedQuotation.costStructure },
-          { item: 'Balance of System', cost: approvedQuotation.costBOS },
-          { item: 'Installation', cost: approvedQuotation.costInstallation }
+          { 
+            id: 'solarModules',
+            item: 'Solar Modules', 
+            cost: approvedQuotation.costSolarModules,
+            status: approvedQuotation.paymentStatus?.solarModules || 'DUE'
+          },
+          { 
+            id: 'inverters',
+            item: 'Inverters', 
+            cost: approvedQuotation.costInverters,
+            status: approvedQuotation.paymentStatus?.inverters || 'DUE'
+          },
+          { 
+            id: 'structure',
+            item: 'Structure & Hardware', 
+            cost: approvedQuotation.costStructure,
+            status: approvedQuotation.paymentStatus?.structure || 'DUE'
+          },
+          { 
+            id: 'bos',
+            item: 'Balance of System', 
+            cost: approvedQuotation.costBOS,
+            status: approvedQuotation.paymentStatus?.bos || 'DUE'
+          },
+          { 
+            id: 'installation',
+            item: 'Installation', 
+            cost: approvedQuotation.costInstallation,
+            status: approvedQuotation.paymentStatus?.installation || 'DUE'
+          }
         ]
       };
     }
@@ -313,5 +346,81 @@ export class CustomerService {
       surveyStatus: item.user_surveyStatus,
       latestQuotationStatus: item.latestQuotationStatus
     }));
+  }
+
+  async assignInstallationTeam(customerId: string, teamId: string, startDate: string, adminId: string) {
+    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    if (!team) {
+      throw new Error('Team not found');
+    }
+
+    await this.usersRepo.update(customerId, {
+      installationStatus: 'INSTALLATION_SCHEDULED',
+      assignedInstallationTeam: team.name,
+      installationStartDate: startDate ? new Date(startDate) : new Date(),
+    });
+
+    // Log Audit
+    await this.auditService.log(
+      adminId,
+      'STATUS_CHANGE',
+      'Customer',
+      customerId,
+      'INSTALLATION',
+      {
+        oldValue: 'Pending',
+        newValue: 'INSTALLATION_SCHEDULED',
+        notes: `Assigned installation team: ${team.name}`
+      }
+    );
+
+    return { 
+      message: 'Installation team assigned successfully', 
+      teamName: team.name,
+      status: 'INSTALLATION_SCHEDULED'
+    };
+  }
+
+  async updateInstallationStatus(customerId: string, status: string) {
+    const validStatuses = [
+      'INSTALLATION_SCHEDULED',
+      'INSTALLATION_STARTED',
+      'INSTALLATION_COMPLETED',
+      'COMMISSIONING',
+      'COMPLETED'
+    ];
+    
+    if (!validStatuses.includes(status)) {
+      throw new Error('Invalid installation status');
+    }
+
+    await this.usersRepo.update(customerId, {
+      installationStatus: status,
+    });
+
+    return { message: 'Installation status updated', status };
+  }
+
+  async markInstallationReady(customerId: string, adminId: string) {
+    // Update installation status to indicate ready for installation scheduling
+    await this.usersRepo.update(customerId, {
+      installationStatus: 'INSTALLATION_READY',
+    });
+
+    // Log Audit
+    await this.auditService.log(
+      adminId,
+      'STATUS_CHANGE',
+      'Customer',
+      customerId,
+      'INSTALLATION',
+      {
+        oldValue: 'Pending',
+        newValue: 'INSTALLATION_READY',
+        notes: 'Payment received, installation ready for scheduling'
+      }
+    );
+
+    return { message: 'Customer marked as ready for installation' };
   }
 }

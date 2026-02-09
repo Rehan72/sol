@@ -120,6 +120,15 @@ export class Quotation {
     @Column({ nullable: true })
     currentApproverRole: string; // PLANT_ADMIN, REGION_ADMIN, SUPER_ADMIN
 
+    @Column({ type: 'jsonb', nullable: true })
+    paymentStatus: {
+        solarModules?: string;
+        inverters?: string;
+        structure?: string;
+        bos?: string;
+        installation?: string;
+    }; // Track payment status per item: PAID, DUE, PENDING
+
     @Column({ type: 'float', nullable: true })
     roi: number; // Return on Investment %
 
