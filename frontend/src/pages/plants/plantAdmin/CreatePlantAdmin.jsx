@@ -23,7 +23,7 @@ import Select from '../../../components/ui/Select';
 import { z } from 'zod';
 import { createPlantAdmin, getPlantAdminById, updatePlantAdmin } from '../../../api/plantAdmin';
 import { getAllPlants } from '../../../api/plant';
-import Toaster from '../../../components/ui/Toaster';
+import { useToast } from '../../../hooks/useToast';
 
 // Zod Validation Schema
 const plantAdminSchema = z.object({
@@ -70,16 +70,7 @@ function CreatePlantAdmin() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [plants, setPlants] = useState([]);
-  const [toasts, setToasts] = useState([]);
-
-  const addToast = (message, type = 'info') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchPlants();
@@ -474,7 +465,6 @@ function CreatePlantAdmin() {
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden text-left">
-      <Toaster toasts={toasts} onRemove={removeToast} />
       {/* Cinematic Overlays */}
       <div className="film-grain" />
       <div className="cinematic-vignette" />

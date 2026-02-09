@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import AuthLayout from '../layouts/AuthLayout';
 import { Sun, Mail, Lock, ArrowRight, Github, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from "../components/ui/button";
-import Toaster from "../components/ui/Toaster";
+import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
@@ -15,7 +15,7 @@ import { loginSchema } from '../schemas/validation';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [toasts, setToasts] = useState([]);
+  const { addToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,15 +27,7 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const addToast = (message, type = "info", duration = 5000) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-    setTimeout(() => removeToast(id), duration);
-  };
 
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const onSubmit = async (formData) => {
     setIsLoading(true);
@@ -61,7 +53,6 @@ const Login = () => {
 
   return (
     <AuthLayout>
-      <Toaster toasts={toasts} onRemove={removeToast} />
       
       <motion.div 
         initial={{ opacity: 0, y: 20, scale: 0.95 }}

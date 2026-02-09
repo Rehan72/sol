@@ -21,7 +21,7 @@ import Select from '../../components/ui/Select';
 import TeamService from '../../services/TeamService';
 import EmployeeService from '../../services/EmployeeService';
 import CustomerService from '../../services/CustomerService';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 const ROLE_TAGS = [
   { value: 'installer', label: 'Installer' },
@@ -41,18 +41,7 @@ function CreateInstallationTeam() {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
   const [existingUsers, setExistingUsers] = useState([]);
-  const [toasts, setToasts] = useState([]);
-  const [customers, setCustomers] = useState([]);
-
-  const addToast = (message, type = 'info', duration = 3000) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type, duration }]);
-    setTimeout(() => removeToast(id), duration);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  const { addToast } = useToast();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -392,7 +381,6 @@ function CreateInstallationTeam() {
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
-      <Toaster toasts={toasts} onRemove={removeToast} />
       {/* Cinematic Overlays */}
       <div className="film-grain" />
       <div className="cinematic-vignette" />

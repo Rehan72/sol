@@ -29,7 +29,7 @@ import {
 } from '../../components/ui/dropdown-menu';
 
 import EmployeeService from '../../services/EmployeeService';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 function EmployeesList() {
     const navigate = useNavigate();
@@ -41,17 +41,7 @@ function EmployeesList() {
         activeTeams: 0
     });
     const [loading, setLoading] = useState(true);
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = "info", duration = 5000) => {
-        const id = Date.now();
-        setToasts((prev) => [...prev, { id, message, type, duration }]);
-        setTimeout(() => removeToast(id), duration);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    const { addToast } = useToast();
 
     useEffect(() => {
         fetchData();
@@ -215,7 +205,6 @@ function EmployeesList() {
 
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
-            <Toaster toasts={toasts} onRemove={removeToast} />
             {/* Cinematic Overlays */}
             <div className="film-grain" />
             <div className="cinematic-vignette" />

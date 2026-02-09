@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Footer from "./Footer";
 import { motion } from "framer-motion";
 import RealisticSun from "./ui/RealisticSun";
+import Toaster from "./ui/Toaster";
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -70,6 +71,9 @@ function Layout({ children }) {
           <footer className="relative z-10 px-6 py-8 md:px-10 border-t border-white/5 bg-black/20 backdrop-blur-xl mt-auto">
             <Footer />
           </footer>
+      
+      {/* Global Toast Notifications */}
+      <Toaster />
     </div>
   );
 }

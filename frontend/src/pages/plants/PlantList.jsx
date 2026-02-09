@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
 import { getAllPlants, getPlantStatistics, deletePlant } from '../../api/plant';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 
 
@@ -40,16 +40,7 @@ function PlantList() {
     avgEfficiency: '0%'
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [toasts, setToasts] = React.useState([]);
-
-  const addToast = (message, type = 'info') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchPlants();
@@ -368,7 +359,6 @@ function PlantList() {
         </motion.div>
 
       </div>
-      <Toaster toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }

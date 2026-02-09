@@ -26,7 +26,7 @@ import { getSolarRequests, assignSurvey } from '../../api/customer';
 import { getTeams } from '../../api/teams';
 import { approveQuotation } from '../../api/quotations';
 import { useAuthStore } from '../../store/authStore';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 const SolarRequests = () => {
     const navigate = useNavigate();
@@ -39,17 +39,7 @@ const SolarRequests = () => {
 
     const [teams, setTeams] = useState([]);
     const [selectedTeamId, setSelectedTeamId] = useState('');
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = 'info', duration = 3000) => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type, duration }]);
-        setTimeout(() => removeToast(id), duration);
-    };
-
-    const removeToast = (id) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-    };
+    const { addToast } = useToast();
 
     const [newLead, setNewLead] = useState({ name: '', location: '', type: 'Residential', bill: '' });
     const [surveyDate, setSurveyDate] = useState(null);
@@ -209,7 +199,6 @@ const SolarRequests = () => {
             <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
 
             <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[150px] rounded-full pointer-events-none" />
-            <Toaster toasts={toasts} onRemove={removeToast} />
 
             <div className="relative z-10 p-6 md:p-12 max-w-7xl mx-auto">
                 {/* Header */}

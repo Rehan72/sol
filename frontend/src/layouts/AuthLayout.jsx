@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Toaster from '../components/ui/Toaster';
 
 const AuthLayout = ({ children }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -103,6 +104,9 @@ const AuthLayout = ({ children }) => {
       </div>
 
       {children}
+      
+      {/* Global Toast Notifications */}
+      <Toaster />
     </div>
   );
 };

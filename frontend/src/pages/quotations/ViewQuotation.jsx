@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuotationById, generateQuotationPdf, submitQuotation, approveQuotation, rejectQuotation } from '../../api/quotations';
 import { Download, CheckCircle, ArrowLeft, Printer, Loader2, Send, XCircle } from 'lucide-react';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 import { useAuthStore } from '../../store/authStore';
 
 const ViewQuotation = () => {
@@ -14,17 +14,7 @@ const ViewQuotation = () => {
     const [downloading, setDownloading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [remarks, setRemarks] = useState('');
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = "info", duration = 5000) => {
-        const id = Date.now();
-        setToasts((prev) => [...prev, { id, message, type, duration }]);
-        setTimeout(() => removeToast(id), duration);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchQuotation = async () => {
@@ -89,7 +79,6 @@ const ViewQuotation = () => {
 
     return (
         <div className="relative p-6 text-white overflow-hidden">
-            <Toaster toasts={toasts} onRemove={removeToast} />
 
             <div className="relative z-10 mx-auto max-w-4xl">
                 {/* Header */}

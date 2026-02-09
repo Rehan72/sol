@@ -24,23 +24,13 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
 import TeamService from '../../services/TeamService';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 function SurveyTeamList() {
   const navigate = useNavigate();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toasts, setToasts] = useState([]);
-
-  const addToast = (message, type = 'info', duration = 3000) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type, duration }]);
-    setTimeout(() => removeToast(id), duration);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchTeams();
@@ -197,7 +187,6 @@ function SurveyTeamList() {
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
-      <Toaster toasts={toasts} onRemove={removeToast} />
 
       {/* Cinematic Overlays */}
       <div className="film-grain" />

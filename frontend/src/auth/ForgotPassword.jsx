@@ -3,25 +3,17 @@ import { motion } from 'framer-motion';
 import AuthLayout from '../layouts/AuthLayout';
 import { Mail, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Button } from "../components/ui/button";
-import Toaster from "../components/ui/Toaster";
+import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
+  const { addToast } = useToast();
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({});
-  const [toasts, setToasts] = useState([]);
 
 
-  const addToast = (message, type = "info") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => removeToast(id), 5000);
-  };
 
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const validate = () => {
     const newErrors = {};
@@ -47,7 +39,6 @@ const ForgotPassword = () => {
 
   return (
     <AuthLayout>
-      <Toaster toasts={toasts} onRemove={removeToast} />
       
       <motion.div 
         initial={{ opacity: 0, y: 20, scale: 0.95 }}

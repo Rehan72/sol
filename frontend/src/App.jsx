@@ -8,29 +8,32 @@ import ForgotPassword from "./auth/ForgotPassword";
 import Master from "./router/Master";
 import { AnimatePresence } from "framer-motion";
 import EventAuditor from "./components/debug/EventAuditor";
+import { ToastProvider } from "./context/ToastContext";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="bg-deep-navy min-h-screen text-white">
-      <EventAuditor />
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <Preloader key="preloader" onComplete={() => setIsLoading(false)} />
-        ) : (
-          <Router>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/*" element={<Master />} />
-            </Routes>
-          </Router>
-        )}
-      </AnimatePresence>
-    </div>
+    <ToastProvider>
+      <div className="bg-deep-navy min-h-screen text-white">
+        <EventAuditor />
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <Preloader key="preloader" onComplete={() => setIsLoading(false)} />
+          ) : (
+            <Router>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/*" element={<Master />} />
+              </Routes>
+            </Router>
+          )}
+        </AnimatePresence>
+      </div>
+    </ToastProvider>
   );
 };
 

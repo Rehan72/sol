@@ -3,7 +3,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import { motion } from 'framer-motion';
 import { Sun, Mail, Lock, User, ArrowRight, ShieldCheck, Phone, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from "../components/ui/button";
-import Toaster from "../components/ui/Toaster";
+import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { register as registerUser } from '../api/auth';
 
@@ -13,7 +13,7 @@ import { registerSchema } from '../schemas/validation';
 
 const Register = () => {
   const navigate = useNavigate();
-  const [toasts, setToasts] = useState([]);
+  const { addToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,16 +39,6 @@ const Register = () => {
 
   const termOfService = watch('termOfService');
 
-  const addToast = (message, type = "info", duration = 5000) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-    setTimeout(() => removeToast(id), duration);
-  };
-
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
@@ -69,7 +59,6 @@ const Register = () => {
   };
   return (
     <AuthLayout>
-      <Toaster toasts={toasts} onRemove={removeToast} />
       
       <motion.div 
         initial={{ opacity: 0, x: 20, scale: 0.95 }}

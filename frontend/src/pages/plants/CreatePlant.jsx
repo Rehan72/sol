@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { createPlant, getPlantById, updatePlant } from '../../api/plant';
 import { getAllRegionAdmins } from '../../api/regionAdmin';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 import { Button } from '../../components/ui/button';
 import LocationPicker from '../../components/ui/LocationPicker';
 import Select from '../../components/ui/Select';
@@ -165,16 +165,7 @@ function CreatePlant() {
 
   const [errors, setErrors] = React.useState({});
   const [touched, setTouched] = React.useState({});
-  const [toasts, setToasts] = React.useState([]);
-
-  const addToast = (message, type = 'info') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  const { addToast } = useToast();
 
   React.useEffect(() => {
     if (location.state?.adminId) {
@@ -840,6 +831,10 @@ function CreatePlant() {
       default: return null;
     }
   };
+
+  // Initialize useToast hook
+  // Assuming useToast is imported from a centralized toast management system
+  // const toast = useToast();
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">

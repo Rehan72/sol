@@ -1,10 +1,13 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, CheckCircle, Info, X } from "lucide-react";
+import { useToast } from "../../hooks/useToast";
 
-const Toaster = ({ toasts, onRemove }) => {
+const Toaster = () => {
+  const { toasts, removeToast } = useToast();
+  
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-100 flex flex-col gap-2 w-full max-w-sm pointer-events-none items-center">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 w-full max-w-sm pointer-events-none items-center">
       <AnimatePresence mode="popLayout">
         {[...toasts].reverse().map((toast) => (
           <motion.div
@@ -52,7 +55,7 @@ const Toaster = ({ toasts, onRemove }) => {
             </div>
 
             <button
-              onClick={() => onRemove(toast.id)}
+              onClick={() => removeToast(toast.id)}
               className="relative z-10 p-1 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white"
             >
               <X className="w-4 h-4" />

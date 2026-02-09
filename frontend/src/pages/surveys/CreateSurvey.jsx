@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createSurvey, completeSurvey } from '../../api/surveys';
 import { ChevronRight, ChevronLeft, Save, CheckCircle, Upload, Sun, Zap, FileText, AlertTriangle, Users } from 'lucide-react';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 
 import { useAuthStore } from '../../store/authStore';
 import Select from '../../components/ui/Select';
@@ -118,16 +118,7 @@ const CreateSurvey = () => {
         }
     }, [customer, setValue, trigger]);
     const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = "info", duration = 5000) => {
-        const id = Date.now();
-        setToasts((prev) => [...prev, { id, message, type, duration }]);
-        setTimeout(() => removeToast(id), duration);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    const { addToast } = useToast();
 
     // Use logged-in user ID
     const surveyorId = user?.id || "unknown-surveyor";
@@ -186,7 +177,6 @@ const CreateSurvey = () => {
 
     return (
         <div className="min-h-screen bg-[var(--color-deep-navy)] text-white p-6 pb-24 relative overflow-hidden">
-            <Toaster toasts={toasts} onRemove={removeToast} />
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--color-solar-yellow)] opacity-5 blur-[100px] rounded-full"></div>

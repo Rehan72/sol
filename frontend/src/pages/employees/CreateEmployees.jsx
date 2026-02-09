@@ -21,7 +21,7 @@ import {
 import { Button } from '../../components/ui/button';
 import Select from '../../components/ui/Select';
 import EmployeeService from '../../services/EmployeeService';
-import Toaster from '../../components/ui/Toaster';
+import { useToast } from '../../hooks/useToast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { employeeSchema, defaultValues } from '../../schemas/employeeSchema';
@@ -51,17 +51,7 @@ function CreateEmployees() {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = "info", duration = 5000) => {
-        const id = Date.now();
-        setToasts((prev) => [...prev, { id, message, type, duration }]);
-        setTimeout(() => removeToast(id), duration);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    const { addToast } = useToast();
 
     useEffect(() => {
         if (employeeId) {
@@ -117,7 +107,6 @@ function CreateEmployees() {
 
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
-            <Toaster toasts={toasts} onRemove={removeToast} />
             {/* Cinematic Overlays */}
             <div className="film-grain" />
             <div className="cinematic-vignette" />
