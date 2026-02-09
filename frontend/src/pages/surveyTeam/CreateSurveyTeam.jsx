@@ -155,7 +155,6 @@ function CreateSurveyTeam() {
         if (formData.teamLeadMode === 'existing' && !value) return 'Please select a team lead';
         return '';
       case 'assignedCustomer':
-        if (!value) return 'Assigned Customer is required';
         return '';
       default:
         return '';
@@ -208,7 +207,7 @@ function CreateSurveyTeam() {
 
     // Validate
     const newErrors = {};
-    const fieldsToValidate = ['teamName', 'assignedCustomer'];
+    const fieldsToValidate = ['teamName'];
     if (formData.teamLeadMode === 'existing') fieldsToValidate.push('teamLeadId');
     if (formData.teamLeadMode === 'new') fieldsToValidate.push('leadName', 'leadEmail', 'leadPhone');
 

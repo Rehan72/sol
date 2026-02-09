@@ -148,7 +148,7 @@ const SolarRequests = () => {
     const getPaymentStatus = (customerId) => {
         const customerPayments = payments[customerId] || [];
         if (customerPayments.length === 0) return null;
-        
+
         // Check if M1 (first milestone) is paid
         const m1Payment = customerPayments.find(p => p.milestoneId === 'M1');
         if (m1Payment && m1Payment.status === 'COMPLETED') {
@@ -257,9 +257,9 @@ const SolarRequests = () => {
         if (!selectedInstallationTeamId || !selectedLead) return;
         try {
             await assignInstallation(selectedLead.id, selectedInstallationTeamId, surveyDate ? surveyDate.toISOString() : null);
-            
+
             addToast("Installation Team Assigned successfully!", 'success');
-            
+
             // Refresh leads and payments
             const data = await getSolarRequests();
             const mappedLeads = data.map(customer => ({
@@ -275,10 +275,10 @@ const SolarRequests = () => {
                 feasibility: 'Pending'
             }));
             setLeads(mappedLeads);
-            
+
             // Refresh payments
             fetchPayments();
-            
+
             closeModal();
         } catch (error) {
             console.error(error);
@@ -291,7 +291,7 @@ const SolarRequests = () => {
             setProcessingId(lead.id);
             await markInstallationReady(lead.id);
             addToast("Customer marked as ready for installation!", 'success');
-            
+
             // Refresh leads
             const data = await getSolarRequests();
             console.log('Refreshed leads data:', data.map(d => ({ id: d.id, status: d.installationStatus })));
@@ -410,7 +410,7 @@ const SolarRequests = () => {
                                             <CheckCircle2 className="w-3 h-3" /> ₹{getPaymentStatus(lead.id).amount?.toLocaleString()}
                                         </span>
                                     </div>
-                                )}                                          
+                                )}
                                 <div className="flex flex-col gap-2">
                                     <Button
                                         onClick={() => handleAction(lead)}
@@ -431,34 +431,34 @@ const SolarRequests = () => {
                                         {lead.status.includes('Approved') && <><CheckCircle2 className="w-4 h-4 mr-2" /> Verified</>}
                                         {lead.status === 'Payment Received' && <><Users className="w-4 h-4 mr-2" /> Assign Team</>}
                                     </Button>
-                                    
+
                                     {/* Mark Ready Button - shown when payment is made but installation not ready */}
                                     {getPaymentStatus(lead.id) && lead.status !== 'Payment Received' && lead.status !== 'Installation Scheduled' &&
                                         (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
-                                        <Button
-                                            onClick={(e) => { e.stopPropagation(); handleMarkInstallationReady(lead); }}
-                                            disabled={processingId === lead.id}
-                                            className="min-w-[140px] bg-solar-yellow text-deep-navy font-bold hover:bg-gold border-none"
-                                        >
-                                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                                            {processingId === lead.id ? 'Processing...' : 'Mark Ready'}
-                                        </Button>
-                                    )}
+                                            <Button
+                                                onClick={(e) => { e.stopPropagation(); handleMarkInstallationReady(lead); }}
+                                                disabled={processingId === lead.id}
+                                                className="min-w-[140px] bg-solar-yellow text-deep-navy font-bold hover:bg-gold border-none"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                {processingId === lead.id ? 'Processing...' : 'Mark Ready'}
+                                            </Button>
+                                        )}
 
                                     {/* Assign Team Button - shown when payment is received */}
                                     {lead.status === 'Payment Received' &&
                                         (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
-                                        <Button
-                                            onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setModalType('assign_installation'); }}
-                                            className="min-w-[140px] bg-blue-500 text-white font-bold hover:bg-blue-600 border-none"
-                                        >
-                                            <Users className="w-4 h-4 mr-2" />
-                                            Assign Team
-                                        </Button>
-                                    )}
+                                            <Button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setModalType('assign_installation'); }}
+                                                className="min-w-[140px] bg-blue-500 text-white font-bold hover:bg-blue-600 border-none"
+                                            >
+                                                <Users className="w-4 h-4 mr-2" />
+                                                Assign Team
+                                            </Button>
+                                        )}
 
                                     {/* Quick Approve Buttons for different stages/roles */}
-                                    {((lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
+                                    {lead.latestQuotationId && ((lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
                                         (lead.status === 'Quotation Submitted' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
                                         (lead.status === 'Approved (Plant)' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||
                                         (lead.status === 'Approved (Region)' && useAuthStore.getState()?.role === 'SUPER_ADMIN')) && (
