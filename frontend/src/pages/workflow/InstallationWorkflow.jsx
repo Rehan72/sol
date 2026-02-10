@@ -314,6 +314,8 @@ function InstallationWorkflow() {
             // Update local state to reflect completion
             setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
             setActivePhase('commissioning');
+            // Navigate to commissioning handoff page
+            navigate(`/commissioning/handoff/${customerId}`);
         } catch (error) {
             console.error('Failed to mark installation as complete:', error);
         } finally {
