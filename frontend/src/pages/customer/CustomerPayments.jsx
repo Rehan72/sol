@@ -100,8 +100,8 @@ const CustomerPayments = () => {
         // M3 is DUE if M2 is paid
         // M4 is DUE if M3 is paid
 
-        const isM1Paid = paidMilestones.includes('M1') || surveyStatus === 'COMPLETED';
-        const isM2Unlocked = paidMilestones.includes('M1') &&
+        const isM1Paid = paidMilestones.includes('M1');
+        const isM2Unlocked = isM1Paid &&
             (installationStatus === 'INSTALLATION_STARTED' || installationStatus === 'INSTALLATION_SCHEDULED');
         const isM3Unlocked = paidMilestones.includes('M2');
         const isM4Unlocked = paidMilestones.includes('M3');

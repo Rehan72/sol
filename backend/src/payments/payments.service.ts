@@ -6,6 +6,7 @@ import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
 import { Payment } from '../entities/payment.entity';
 import { Quotation } from '../entities/quotation.entity';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -16,6 +17,7 @@ export class PaymentsService {
     private configService: ConfigService,
     @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
     @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
+    @InjectRepository(User) private userRepo: Repository<User>,
   ) {
     const keyId = this.configService.get<string>('RAZORPAY_KEY_ID');
     const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
@@ -151,7 +153,11 @@ export class PaymentsService {
     'inverters': 'inverters',
     'structure': 'structure',
     'bos': 'bos',
-    'installation': 'installation'
+    'installation': 'installation',
+    'M1': 'solarModules', // Mapping frontend IDs to existing fields
+    'M2': 'inverters',
+    'M3': 'structure',
+    'M4': 'bos'
   };
 
   async updateQuotationPaymentStatus(quotationId: number, milestoneId: string): Promise<Quotation | null> {
@@ -181,5 +187,13 @@ export class PaymentsService {
     }
 
     return this.quotationRepo.save(quotation);
+  }
+  
+  async updateCustomerInstallationStatus(customerId: string, status: string): Promise<User | null> {
+    const user = await this.userRepo.findOne({ where: { id: customerId } });
+    if (!user) return null;
+    
+    user.installationStatus = status;
+    return this.userRepo.save(user);
   }
 }

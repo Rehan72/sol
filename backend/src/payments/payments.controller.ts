@@ -116,8 +116,13 @@ export class PaymentsController {
         try {
           await this.paymentsService.updateQuotationPaymentStatus(body.quotationId, body.milestoneId);
           quotationUpdated = true;
+          
+          // Special logic: If M1 is paid, mark customer as ready for installation
+          if (body.milestoneId === 'M1' && body.customerId) {
+            await this.paymentsService.updateCustomerInstallationStatus(body.customerId, 'INSTALLATION_READY');
+          }
         } catch (err) {
-          console.error('Error updating quotation payment status:', err);
+          console.error('Error updating quotation/customer status:', err);
         }
       }
       

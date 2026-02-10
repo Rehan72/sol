@@ -80,7 +80,7 @@ const ViewQuotation = () => {
     return (
         <div className="relative p-6 text-white overflow-hidden">
 
-            <div className="relative z-10 mx-auto max-w-4xl">
+            <div className="relative z-10 mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-(--color-solar-light-gray) hover:text-white transition-colors">

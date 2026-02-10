@@ -158,7 +158,8 @@ const CreateSurvey = () => {
         4: ['recommendedSystemSize', 'installationChallenges', 'specialNotes']
     };
 
-    const handleNext = async () => {
+    const handleNext = async (e) => {
+        e.preventDefault();
         const fields = stepFields[currentStep];
         const isValid = await trigger(fields);
         if (isValid) {
@@ -183,7 +184,7 @@ const CreateSurvey = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--color-solar-gold)] opacity-5 blur-[100px] rounded-full"></div>
             </div>
 
-            <div className="max-w-5xl mx-auto relative z-10">
+            <div className="mx-auto relative z-10">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>

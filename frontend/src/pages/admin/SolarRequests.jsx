@@ -49,76 +49,76 @@ const SolarRequests = () => {
     const [installationTeams, setInstallationTeams] = useState([]);
     const [selectedInstallationTeamId, setSelectedInstallationTeamId] = useState('');
 
+    const fetchLeads = async () => {
+        try {
+            const data = await getSolarRequests();
+            // Map backend data to frontend structure
+            const mappedLeads = data.map(customer => ({
+                id: customer.id,
+                name: customer.name || 'Unknown',
+                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
+                type: customer.propertyType || 'Residential',
+                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
+                status: mapStatus(customer),
+                latestQuotationStatus: customer.latestQuotationStatus,
+                latestQuotationId: customer.latestQuotationId,
+                date: new Date(customer.createdAt).toLocaleDateString(),
+                // Mocking some fields for now as they might not exist in backend yet or need complex logic
+                feasibility: 'Pending'
+            }));
+            setLeads(mappedLeads);
+        } catch (error) {
+            console.error("Failed to fetch solar requests:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchTeams = async () => {
+        try {
+            const data = await getTeams({ type: 'SURVEY' });
+            const teamOptions = data.map(team => ({
+                value: team.id,
+                label: `${team.name} (${team.status})`
+            }));
+            setTeams(teamOptions);
+        } catch (error) {
+            console.error("Failed to fetch teams:", error);
+        }
+    }
+
+    const fetchPayments = async () => {
+        try {
+            const response = await getPlantPayments();
+            const data = response?.data || response || [];
+            // Create a map of customerId -> payments
+            const paymentMap = {};
+            data.forEach(payment => {
+                if (!paymentMap[payment.customerId]) {
+                    paymentMap[payment.customerId] = [];
+                }
+                paymentMap[payment.customerId].push(payment);
+            });
+            setPayments(paymentMap);
+        } catch (error) {
+            console.error("Failed to fetch payments:", error);
+        }
+    }
+
+    const fetchInstallationTeams = async () => {
+        try {
+            const data = await getTeams({ type: 'INSTALLATION' });
+            const teamOptions = data.map(team => ({
+                value: team.id,
+                label: `${team.name} (${team.status})`
+            }));
+            setInstallationTeams(teamOptions);
+        } catch (error) {
+            console.error("Failed to fetch installation teams:", error);
+        }
+    }
+
     useEffect(() => {
-        const fetchLeads = async () => {
-            try {
-                const data = await getSolarRequests();
-                // Map backend data to frontend structure
-                const mappedLeads = data.map(customer => ({
-                    id: customer.id,
-                    name: customer.name || 'Unknown',
-                    location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
-                    type: customer.propertyType || 'Residential',
-                    bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
-                    status: mapStatus(customer),
-                    latestQuotationStatus: customer.latestQuotationStatus,
-                    latestQuotationId: customer.latestQuotationId,
-                    date: new Date(customer.createdAt).toLocaleDateString(),
-                    // Mocking some fields for now as they might not exist in backend yet or need complex logic
-                    feasibility: 'Pending'
-                }));
-                setLeads(mappedLeads);
-            } catch (error) {
-                console.error("Failed to fetch solar requests:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        const fetchTeams = async () => {
-            try {
-                const data = await getTeams({ type: 'SURVEY' });
-                const teamOptions = data.map(team => ({
-                    value: team.id,
-                    label: `${team.name} (${team.status})`
-                }));
-                setTeams(teamOptions);
-            } catch (error) {
-                console.error("Failed to fetch teams:", error);
-            }
-        }
-
-        const fetchPayments = async () => {
-            try {
-                const response = await getPlantPayments();
-                const data = response?.data || response || [];
-                // Create a map of customerId -> payments
-                const paymentMap = {};
-                data.forEach(payment => {
-                    if (!paymentMap[payment.customerId]) {
-                        paymentMap[payment.customerId] = [];
-                    }
-                    paymentMap[payment.customerId].push(payment);
-                });
-                setPayments(paymentMap);
-            } catch (error) {
-                console.error("Failed to fetch payments:", error);
-            }
-        }
-
-        const fetchInstallationTeams = async () => {
-            try {
-                const data = await getTeams({ type: 'INSTALLATION' });
-                const teamOptions = data.map(team => ({
-                    value: team.id,
-                    label: `${team.name} (${team.status})`
-                }));
-                setInstallationTeams(teamOptions);
-            } catch (error) {
-                console.error("Failed to fetch installation teams:", error);
-            }
-        }
-
         fetchLeads();
         fetchTeams();
         fetchPayments();
@@ -126,7 +126,12 @@ const SolarRequests = () => {
     }, []);
 
     const mapStatus = (customer) => {
-        // Higher Priority: Quotation Workflow
+        // High Priority: Installation Workflow (Progress indicated by status)
+        if (customer.installationStatus === 'INSTALLATION_SCHEDULED') return 'Installation Scheduled';
+        if (customer.installationStatus === 'INSTALLATION_STARTED') return 'Installation Started';
+        if (customer.installationStatus === 'INSTALLATION_READY') return 'Payment Received';
+
+        // Quotation Workflow
         if (customer.latestQuotationStatus === 'FINAL_APPROVED') return 'Final Approved';
         if (customer.latestQuotationStatus === 'REGION_APPROVED') return 'Approved (Region)';
         if (customer.latestQuotationStatus === 'PLANT_APPROVED') return 'Approved (Plant)';
@@ -134,10 +139,7 @@ const SolarRequests = () => {
         if (customer.latestQuotationStatus === 'REJECTED') return 'Quotation Rejected';
         if (customer.latestQuotationStatus === 'DRAFT') return 'Survey Completed';
 
-        // Lower Priority: Installation/Survey Workflow
-        if (customer.installationStatus === 'INSTALLATION_READY') return 'Payment Received';
-        if (customer.installationStatus === 'INSTALLATION_SCHEDULED') return 'Installation Scheduled';
-        if (customer.installationStatus === 'INSTALLATION_STARTED') return 'Installation Started';
+        // Survey/Onboarding Workflow
         if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED') return 'Survey Completed';
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
@@ -231,20 +233,7 @@ const SolarRequests = () => {
             addToast("Quotation Approved successfully!", 'success');
 
             // Refresh leads
-            const data = await getSolarRequests();
-            const mappedLeads = data.map(customer => ({
-                id: customer.id,
-                name: customer.name || 'Unknown',
-                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
-                type: customer.propertyType || 'Residential',
-                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
-                status: mapStatus(customer),
-                latestQuotationStatus: customer.latestQuotationStatus,
-                latestQuotationId: customer.latestQuotationId,
-                date: new Date(customer.createdAt).toLocaleDateString(),
-                feasibility: 'Pending'
-            }));
-            setLeads(mappedLeads);
+            fetchLeads();
         } catch (error) {
             console.error(error);
             addToast(error.response?.data?.message || "Failed to approve quotation", 'error');
@@ -260,21 +249,8 @@ const SolarRequests = () => {
 
             addToast("Installation Team Assigned successfully!", 'success');
 
-            // Refresh leads and payments
-            const data = await getSolarRequests();
-            const mappedLeads = data.map(customer => ({
-                id: customer.id,
-                name: customer.name || 'Unknown',
-                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
-                type: customer.propertyType || 'Residential',
-                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
-                status: mapStatus(customer),
-                latestQuotationStatus: customer.latestQuotationStatus,
-                latestQuotationId: customer.latestQuotationId,
-                date: new Date(customer.createdAt).toLocaleDateString(),
-                feasibility: 'Pending'
-            }));
-            setLeads(mappedLeads);
+            // Refresh leads
+            fetchLeads();
 
             // Refresh payments
             fetchPayments();
@@ -293,22 +269,8 @@ const SolarRequests = () => {
             addToast("Customer marked as ready for installation!", 'success');
 
             // Refresh leads
-            const data = await getSolarRequests();
-            console.log('Refreshed leads data:', data.map(d => ({ id: d.id, status: d.installationStatus })));
-            const mappedLeads = data.map(customer => ({
-                id: customer.id,
-                name: customer.name || 'Unknown',
-                location: customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location Pending',
-                type: customer.propertyType || 'Residential',
-                bill: customer.billRange ? `~${customer.billRange}` : 'Not provided',
-                status: mapStatus(customer),
-                latestQuotationStatus: customer.latestQuotationStatus,
-                latestQuotationId: customer.latestQuotationId,
-                date: new Date(customer.createdAt).toLocaleDateString(),
-                feasibility: 'Pending'
-            }));
-            console.log('Mapped leads with status:', mappedLeads.map(l => ({ id: l.id, status: l.status })));
-            setLeads(mappedLeads);
+            fetchLeads();
+            closeModal();
         } catch (error) {
             console.error(error);
             addToast("Failed to mark installation ready", 'error');
