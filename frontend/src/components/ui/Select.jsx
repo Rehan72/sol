@@ -15,6 +15,7 @@ const Select = ({
   className = ""
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const containerRef = useRef(null);
 
   // Close when clicking outside
@@ -27,6 +28,20 @@ const Select = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Handle dropdown position
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If less than 250px below (Select is shorter than DatePicker), and more space above, drop up
+      if (spaceBelow < 250 && rect.top > spaceBelow) {
+        setDropUp(true);
+      } else {
+        setDropUp(false);
+      }
+    }
+  }, [isOpen]);
 
   const handleSelect = (optionValue) => {
     if (disabled) return;
@@ -96,11 +111,11 @@ const Select = ({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: dropUp ? 10 : -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: dropUp ? 10 : -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute z-50 w-full mt-2 overflow-hidden rounded-xl border border-white/10 bg-deep-navy/90 backdrop-blur-xl shadow-2xl ring-1 ring-black/5"
+            className={`absolute z-50 w-full ${dropUp ? 'bottom-full mb-2' : 'mt-2'} overflow-hidden rounded-xl border border-white/10 bg-deep-navy/90 backdrop-blur-xl shadow-2xl ring-1 ring-black/5`}
           >
             <div className="max-h-60 overflow-y-auto py-2 custom-scrollbar">
               {options.map((option) => (

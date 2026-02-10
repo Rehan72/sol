@@ -19,7 +19,7 @@ function Layout({ children }) {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-deep-navy text-white font-sans selection:bg-solar-yellow selection:text-deep-navy antialiased overflow-hidden">
+    <div className="relative h-screen flex flex-col bg-deep-navy text-white font-sans selection:bg-solar-yellow selection:text-deep-navy antialiased overflow-hidden">
       {/* 1. Global Background Gradient */}
       {/* <div
         className="fixed inset-0 z-0 pointer-events-none"

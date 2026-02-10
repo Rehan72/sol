@@ -68,26 +68,26 @@ function SurveyTeamDetail() {
                         </Button>
                         <div>
                             <h1 className="text-3xl font-black uppercase rim-light tracking-tighter">
-                                {team.name.split(' ').length > 1 ? (
+                                {team?.name?.split(' ').length > 1 ? (
                                     <>
-                                        {team.name.split(' ').slice(0, -1).join(' ')}{' '}
-                                        <span className="text-solar-yellow">{team.name.split(' ').slice(-1)}</span>
+                                        {team?.name?.split(' ').slice(0, -1).join(' ')}{' '}
+                                        <span className="text-solar-yellow">{team?.name?.split(' ').slice(-1)}</span>
                                     </>
-                                ) : team.name.includes('-') ? (
+                                ) : team?.name?.includes('-') ? (
                                     <>
-                                        {team.name.split('-').slice(0, -1).join('-')}-
-                                        <span className="text-solar-yellow">{team.name.split('-').slice(-1)}</span>
+                                        {team?.name?.split('-').slice(0, -1).join('-')}-
+                                        <span className="text-solar-yellow">{team?.name?.split('-').slice(-1)}</span>
                                     </>
                                 ) : (
-                                    team.name
+                                    team?.name
                                 )}
                             </h1>
                             <div className="flex items-center gap-3 text-white/50 text-sm mt-1">
-                                <span className="flex items-center gap-1"><Map className="w-3 h-3" /> Team ID: {team.code}</span>
+                                <span className="flex items-center gap-1"><Map className="w-3 h-3" /> Team ID: {team?.code}</span>
                                 <span className="w-1 h-1 rounded-full bg-white/30" />
-                                <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-bold uppercase tracking-wide">{team.status === 'active' ? 'Survey In Progress' : 'On Standby'}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-bold uppercase tracking-wide">{team?.status === 'active' ? 'Survey In Progress' : 'On Standby'}</span>
                                 <span className="w-1 h-1 rounded-full bg-white/30" />
-                                <span className="flex items-center gap-1 text-emerald-400"><ShieldCheck className="w-3 h-3" /> {team.status}</span>
+                                <span className="flex items-center gap-1 text-emerald-400"><ShieldCheck className="w-3 h-3" /> {team?.status}</span>
                             </div>
                         </div>
                     </div>
@@ -115,14 +115,14 @@ function SurveyTeamDetail() {
 
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden flex items-center justify-center">
-                                    {team.teamLead?.avatar ? (
-                                        <img src={team.teamLead.avatar} alt={team.teamLead.name} className="w-full h-full object-cover" />
+                                    {team?.teamLead?.avatar ? (
+                                        <img src={team?.teamLead?.avatar} alt={team?.teamLead?.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <span className="text-2xl font-bold">{team.teamLead?.name?.charAt(0) || team.teamLead?.email?.charAt(0) || '?'}</span>
+                                        <span className="text-2xl font-bold">{team?.teamLead?.name?.charAt(0) || team?.teamLead?.email?.charAt(0) || '?'}</span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-xl font-bold">{team.teamLead?.name || team.teamLead?.email || 'Unassigned'}</p>
+                                    <p className="text-xl font-bold">{team?.teamLead?.name || team?.teamLead?.email || 'Unassigned'}</p>
                                     <p className="text-solar-yellow text-sm font-medium">Lead Surveyor</p>
                                 </div>
                             </div>
@@ -134,7 +134,7 @@ function SurveyTeamDetail() {
                                     </div>
                                     <div>
                                         <p className="text-xs text-white/40 uppercase font-bold">Email</p>
-                                        <p className="text-sm font-medium">{team.teamLead?.email || 'N/A'}</p>
+                                        <p className    ="text-sm font-medium">{team?.teamLead?.email || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
@@ -143,7 +143,7 @@ function SurveyTeamDetail() {
                                     </div>
                                     <div>
                                         <p className="text-xs text-white/40 uppercase font-bold">Mobile</p>
-                                        <p className="text-sm font-medium">{team.teamLead?.phone || 'N/A'}</p>
+                                        <p className="text-sm font-medium">{team?.teamLead?.phone || 'N/A'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -160,9 +160,9 @@ function SurveyTeamDetail() {
                             </h3>
                             <div className="p-4 rounded-xl bg-linear-to-br from-white/5 to-white/0 border border-white/10">
                                 <p className="text-xs text-white/40 uppercase font-bold mb-1">Assigned Customer</p>
-                                <p className="text-lg font-bold text-white mb-2">{team.customer?.name || team.customer?.email || 'Unassigned'}</p>
+                                <p className="text-lg font-bold text-white mb-2">{team?.customer?.name || team?.customer?.email || 'Unassigned'}</p>
                                 <div className="flex items-center gap-2 text-xs text-white/50">
-                                    <MapPin className="w-3 h-3" /> {team.customer?.city || 'Location N/A'}
+                                    <MapPin className="w-3 h-3" /> {team?.customer?.city || 'Location N/A'}
                                 </div>
                             </div>
                         </motion.div>
@@ -196,9 +196,9 @@ function SurveyTeamDetail() {
                             className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                         >
                         {[
-                            { label: 'Sites Surveyed', value: team.stats?.completedJobs || 0, icon: CheckCircle2, color: 'text-emerald-400' },
-                            { label: 'Avg Time', value: team.stats?.avgCompletionTime || '5 Hours', icon: Clock, color: 'text-solar-yellow' },
-                            { label: 'Team Size', value: team.stats?.teamSize || 0, icon: Users, color: 'text-solar-yellow' },
+                            { label: 'Sites Surveyed', value: team?.stats?.completedJobs || 0, icon: CheckCircle2, color: 'text-emerald-400' },
+                            { label: 'Avg Time', value: team?.stats?.avgCompletionTime || '5 Hours', icon: Clock, color: 'text-solar-yellow' },
+                            { label: 'Team Size', value: team?.stats?.teamSize || 0, icon: Users, color: 'text-solar-yellow' },
                         ].map((stat, i) => (
                             <div key={i} className="glass p-4 rounded-2xl flex items-center gap-4">
                                 <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${stat.color}`}>
@@ -230,11 +230,11 @@ function SurveyTeamDetail() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {team.members?.map((member) => (
+                                {team?.members?.map((member) => (
                                     <div key={member.id} className="group p-4 rounded-xl bg-white/5 border border-white/5 hover:border-solar-yellow/30 hover:bg-white/10 transition-all flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center font-bold text-white/80 border border-white/10">
-                                                {member.user?.name?.charAt(0) || member.user?.email?.charAt(0) || '?'}
+                                                {member?.user?.name?.charAt(0) || member?.user?.email?.charAt(0) || '?'}
                                             </div>
                                             <div>
                                                 <p className="font-bold group-hover:text-solar-yellow transition-colors">{member.user?.name || member.user?.email || 'Unknown'}</p>
@@ -246,7 +246,7 @@ function SurveyTeamDetail() {
                                         </div>
                                     </div>
                                 ))}
-                                {(!team.members || team.members.length === 0) && (
+                                {(!team?.members || team?.members?.length === 0) && (
                                     <div className="col-span-2 text-center py-8 border border-white/5 rounded-xl bg-white/5">
                                         <p className="text-white/40 italic">No additional field agents assigned.</p>
                                     </div>

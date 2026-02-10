@@ -483,7 +483,7 @@ const SolarRequests = () => {
                     {modalType === 'create_lead' && (
                         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Plus className="w-6 h-6 text-solar-yellow" /> Create Solar Request
                                 </h2>
@@ -546,7 +546,7 @@ const SolarRequests = () => {
                     {modalType === 'assign_survey' && (
                         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Clipboard className="w-5 h-5 text-solar-yellow" /> Assign Survey Team
                                 </h2>
@@ -591,7 +591,7 @@ const SolarRequests = () => {
                     {modalType === 'create_quote' && (
                         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-2xl shadow-2xl z-10">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-2xl shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Wallet className="w-5 h-5 text-emerald-400" /> Create Quotation
                                 </h2>
@@ -643,7 +643,7 @@ const SolarRequests = () => {
                     {modalType === 'assign_installation' && (
                         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Users className="w-5 h-5 text-blue-400" /> Assign Installation Team
                                 </h2>
