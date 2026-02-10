@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkflowStep } from '../entities/workflow-step.entity';
+import { User } from '../entities/user.entity';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class WorkflowService {
     constructor(
         @InjectRepository(WorkflowStep)
         private stepRepo: Repository<WorkflowStep>,
+        @InjectRepository(User)
+        private userRepo: Repository<User>,
         private auditService: AuditService
     ) { }
 
@@ -135,6 +138,22 @@ export class WorkflowService {
             nextPhase,
             { notes: `Advanced to ${nextPhase} phase` }
         );
+
+        // Update User Status
+        try {
+            const user = await this.userRepo.findOne({ where: { id: customerId } });
+            if (user) {
+                if (nextPhase === 'INSTALLATION') {
+                    user.surveyStatus = 'COMPLETED';
+                    user.installationStatus = 'IN_PROGRESS';
+                } else if (nextPhase === 'COMMISSIONING') {
+                    user.installationStatus = 'COMPLETED';
+                }
+                await this.userRepo.save(user);
+            }
+        } catch (error) {
+            console.error('Failed to update user status during phase advancement:', error);
+        }
 
         return { success: true, message: `Advanced to ${nextPhase} phase` };
     }

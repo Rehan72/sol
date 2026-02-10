@@ -101,10 +101,25 @@ const CustomerPayments = () => {
         // M4 is DUE if M3 is paid
 
         const isM1Paid = paidMilestones.includes('M1');
-        const isM2Unlocked = isM1Paid &&
-            (installationStatus === 'INSTALLATION_STARTED' || installationStatus === 'INSTALLATION_SCHEDULED');
-        const isM3Unlocked = paidMilestones.includes('M2');
-        const isM4Unlocked = paidMilestones.includes('M3');
+        const isM2Paid = paidMilestones.includes('M2');
+        const isM3Paid = paidMilestones.includes('M3');
+
+        const isM2Unlocked = isM1Paid && (
+            installationStatus === 'INSTALLATION_READY' ||
+            installationStatus === 'INSTALLATION_SCHEDULED' ||
+            installationStatus === 'INSTALLATION_STARTED'
+        );
+
+        const isM3Unlocked = isM2Paid && (
+            installationStatus === 'INSTALLATION_COMPLETED' ||
+            installationStatus === 'COMMISSIONING' ||
+            installationStatus === 'COMPLETED'
+        );
+
+        const isM4Unlocked = isM3Paid && (
+            installationStatus === 'COMMISSIONING' ||
+            installationStatus === 'COMPLETED'
+        );
 
         const dynamicMilestones = [
             {

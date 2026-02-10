@@ -32,7 +32,7 @@ export class WorkflowController {
     // Endpoint to initialize workflow for a customer (can be called when Survey is assigned)
     @Post('init/:customerId')
     @UseGuards(AccessTokenGuard, RolesGuard)
-    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
     async initWorkflow(@Param('customerId') customerId: string, @Req() req: any) {
         return this.workflowService.initializeWorkflow(customerId, req.user.id);
     }

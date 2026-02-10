@@ -1,11 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;700;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;700;900&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -52,29 +54,51 @@
   --color-solar-gray: #7b7f85;
   --color-solar-dark-gray: #2b2e33;
   --color-solar-black: #07000b;
-  
+
   /* Solar Energy Theme Colors */
-  --color-solar-yellow: #FFD700;
-  --color-solar-gold: #FFA500;
-  --color-sky-blue: #87CEEB;
+  --color-solar-yellow: #ffd700;
+  --color-solar-gold: #ffa500;
+  --color-sky-blue: #87ceeb;
   --color-deep-navy: #000033;
-  --color-sunset-orange: #FF8C00;
+  --color-sunset-orange: #ff8c00;
 
   --animate-noise: noise 0.2s infinite;
 }
 
 @keyframes noise {
-  0% { transform: translate(0,0) }
-  10% { transform: translate(-5%,-5%) }
-  20% { transform: translate(-10%,5%) }
-  30% { transform: translate(5%,-10%) }
-  40% { transform: translate(-5%,15%) }
-  50% { transform: translate(-10%,5%) }
-  60% { transform: translate(15%,0) }
-  70% { transform: translate(0,10%) }
-  80% { transform: translate(-15%,0) }
-  90% { transform: translate(10%,5%) }
-  100% { transform: translate(5%,0) }
+  0% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5%, -5%);
+  }
+  20% {
+    transform: translate(-10%, 5%);
+  }
+  30% {
+    transform: translate(5%, -10%);
+  }
+  40% {
+    transform: translate(-5%, 15%);
+  }
+  50% {
+    transform: translate(-10%, 5%);
+  }
+  60% {
+    transform: translate(15%, 0);
+  }
+  70% {
+    transform: translate(0, 10%);
+  }
+  80% {
+    transform: translate(-15%, 0);
+  }
+  90% {
+    transform: translate(10%, 5%);
+  }
+  100% {
+    transform: translate(5%, 0);
+  }
 }
 
 :root {
@@ -97,9 +121,39 @@
   --border: rgba(255, 255, 255, 0.2);
   --input: rgba(255, 255, 255, 0.1);
   --ring: var(--color-solar-yellow);
-  
+
   /* Sky Gradients */
-  --sky-gradient: linear-gradient(180deg, #000033 0%, #001f3f 40%, #FF8C00 80%, #FFD700 100%);
+  --sky-gradient: linear-gradient(
+    180deg,
+    #000033 0%,
+    #001f3f 40%,
+    #ff8c00 80%,
+    #ffd700 100%
+  );
+
+  /* Global Scrollbar Colors */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--background);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 20px;
+  border: 2px solid var(--background);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
 }
 
 html.lenis {
@@ -143,28 +197,50 @@ body {
 }
 
 .text-glow {
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+  text-shadow:
+    0 0 10px rgba(255, 215, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.3);
 }
 
 @keyframes solar-plasma {
-  0% { transform: scale(1) translate(0, 0); }
-  50% { transform: scale(1.05) translate(-1%, 1%); }
-  100% { transform: scale(1) translate(0, 0); }
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.05) translate(-1%, 1%);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
 }
 
 @keyframes flare-float {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-10px, 10px) scale(1.1); }
-  100% { transform: translate(0, 0) scale(1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10px, 10px) scale(1.1);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
 }
 
 .sun-spherical-mask {
   mask-image: radial-gradient(circle at center, black 40%, transparent 75%);
-  -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    circle at center,
+    black 40%,
+    transparent 75%
+  );
 }
 
 .volumetric-shaft {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.4) 0%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0.4) 0%,
+    transparent 100%
+  );
   filter: blur(10px);
   transform-origin: left center;
 }
@@ -179,7 +255,11 @@ body {
 
 .lens-flare-halo {
   border: 1px solid rgba(255, 215, 0, 0.2);
-  background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.1) 100%);
+  background: radial-gradient(
+    circle,
+    transparent 60%,
+    rgba(255, 215, 0, 0.1) 100%
+  );
   filter: blur(10px);
 }
 
@@ -191,7 +271,9 @@ body {
 }
 
 .sun-depth-shadow {
-  box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 0 120px rgba(255, 140, 0, 0.5);
+  box-shadow:
+    inset 0 0 100px rgba(0, 0, 0, 0.8),
+    0 0 120px rgba(255, 140, 0, 0.5);
 }
 
 /* Cinematic Overlays */
@@ -236,9 +318,17 @@ body {
 }
 
 @keyframes lightLeak {
-  0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
-  50% { opacity: 1; }
-  100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%) rotate(25deg);
+    opacity: 0;
+  }
 }
 
 .text-anchor-bg {
@@ -246,10 +336,11 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, black, transparent);
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   @apply letter-spacing-cinematic;
 }
-
 
 .animate-shimmer::after {
   content: "";
