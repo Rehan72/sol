@@ -166,7 +166,7 @@ function InstallationWorkflow() {
                     
                     if (profile.surveyStatus === 'COMPLETED' && profile.installationStatus && profile.installationStatus !== 'PENDING') {
                         initialPhase = 'installation';
-                    } else if (profile.installationStatus === 'COMPLETED') {
+                    } else if (profile.installationStatus === 'INSTALLATION_COMPLETED') {
                         initialPhase = 'commissioning';
                     }
                     
@@ -256,7 +256,7 @@ function InstallationWorkflow() {
                 setCustomerData(prev => ({ ...prev, installationStatus: 'IN_PROGRESS' }));
             } else if (nextPhase === 'commissioning') {
                 setActivePhase('commissioning');
-                setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
+                setCustomerData(prev => ({ ...prev, installationStatus: 'INSTALLATION_COMPLETED' }));
             } else if (nextPhase === 'live') {
                 setActivePhase('live');
             }
@@ -312,7 +312,7 @@ function InstallationWorkflow() {
             setAdvancingPhase(true);
             await markInstallationComplete(customerId);
             // Update local state to reflect completion
-            setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
+            setCustomerData(prev => ({ ...prev, installationStatus: 'INSTALLATION_COMPLETED' }));
             setActivePhase('commissioning');
             // Navigate to commissioning handoff page
             navigate(`/commissioning/handoff/${customerId}`);
@@ -381,7 +381,7 @@ function InstallationWorkflow() {
                                         status = 'completed';
                                         date = customerData?.startDate || 'Completed';
                                     } else if (phase.id === 'installation') {
-                                        status = customerData?.installationStatus === 'COMPLETED' ? 'completed' : 'in_progress';
+                                        status = customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? 'completed' : 'in_progress';
                                         date = 'In Progress';
                                     } else {
                                         status = 'locked';
@@ -468,7 +468,7 @@ function InstallationWorkflow() {
                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${activePhase === 'installation'
                                     ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30 animate-pulse'
                                     : activePhase === 'commissioning' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/10 text-white/40 border-white/10'}`}>
-                                    {customerData?.installationStatus === 'COMPLETED' ? 'Completed' : (activePhase === 'installation' ? 'In Progress' : (activePhase === 'commissioning' ? 'Completed' : 'Pending'))}
+                                    {customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? 'Completed' : (activePhase === 'installation' ? 'In Progress' : (activePhase === 'commissioning' ? 'Completed' : 'Pending'))}
                                 </span>
                             </div>
                             <h4 className="font-bold text-lg">Installation</h4>
@@ -814,12 +814,12 @@ function InstallationWorkflow() {
                                 <div className="glass rounded-2xl p-6 border-l-4 border-l-solar-yellow flex flex-col md:flex-row justify-between items-center gap-6">
                                     <div>
                                         <h2 className="text-xl font-black uppercase tracking-wide">Installation Phase</h2>
-                                        <p className={`${customerData?.installationStatus === 'COMPLETED' ? 'text-emerald-400' : 'text-solar-yellow'} font-bold uppercase text-xs tracking-widest mt-1`}>
-                                            Status: {customerData?.installationStatus === 'COMPLETED' ? 'Completed' : 'In Progress'}
+                                        <p className={`${customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? 'text-emerald-400' : 'text-solar-yellow'} font-bold uppercase text-xs tracking-widest mt-1`}>
+                                            Status: {customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? 'Completed' : 'In Progress'}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        {customerData?.installationStatus === 'COMPLETED' ? (
+                                        {customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? (
                                             <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 font-bold uppercase text-xs tracking-widest rounded-lg border border-emerald-500/30">
                                                 Installation Completed
                                             </span>

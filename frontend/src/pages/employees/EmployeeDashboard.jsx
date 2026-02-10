@@ -196,7 +196,7 @@ const EmployeeDashboard = () => {
                                                     {activeTab === 'surveys' ? (
                                                         task.surveyStatus === 'IN_PROGRESS' ? 'Resume Survey' : 'Start Survey'
                                                     ) : (
-                                                        task.installationStatus === 'COMPLETED' ? 'View Installation' : 'Manage Installation'
+                                                        task.installationStatus === 'INSTALLATION_COMPLETED' ? 'View Installation' : 'Manage Installation'
                                                     )} <ChevronRight className="w-3 h-3 ml-1" />
                                                 </Button>
                                             </div>

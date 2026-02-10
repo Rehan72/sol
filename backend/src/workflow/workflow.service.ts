@@ -186,10 +186,10 @@ export class WorkflowService {
             }
         }
 
-        // Update User Status to COMPLETED
+        // Update User Status to INSTALLATION_COMPLETED (consistent with customer service)
         const user = await this.userRepo.findOne({ where: { id: customerId } });
         if (user) {
-            user.installationStatus = 'COMPLETED';
+            user.installationStatus = 'INSTALLATION_COMPLETED';
             await this.userRepo.save(user);
         }
 
