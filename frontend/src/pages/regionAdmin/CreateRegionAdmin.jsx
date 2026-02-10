@@ -103,7 +103,8 @@ function CreateRegionAdmin() {
     }
   };
 
-  const handleNext = async () => {
+  const handleNext = async (event) => {
+    event.preventDefault();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
 
     // Validate current tab fields before moving next
@@ -158,9 +159,9 @@ function CreateRegionAdmin() {
       }
 
       // Small delay to let toast be seen before navigation
-      setTimeout(() => {
+    
         navigate('/region-admin');
-      }, 1000);
+     
     } catch (error) {
       console.error('Error creating region admin:', error);
       const responseData = error.response?.data;
