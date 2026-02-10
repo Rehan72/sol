@@ -209,9 +209,9 @@ function InstallationTeamDetail() {
                     className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                 >
                     {[
-                        { label: 'Completed Jobs', value: team.members.length > 5 ? '14' : '0', icon: CheckCircle2, color: 'text-emerald-400' },
-                        { label: 'Avg Completion', value: '3 Days', icon: Clock, color: 'text-white' },
-                        { label: 'Team Size', value: (team.members?.length || 0) + (team.teamLead ? 1 : 0), icon: Users, color: 'text-solar-yellow' },
+                        { label: 'Completed Jobs', value: team.stats?.completedJobs || 0, icon: CheckCircle2, color: 'text-emerald-400' },
+                        { label: 'Avg Completion', value: team.stats?.avgCompletionTime || '3 Days', icon: Clock, color: 'text-white' },
+                        { label: 'Team Size', value: team.stats?.teamSize || 0, icon: Users, color: 'text-solar-yellow' },
                     ].map((stat, i) => (
                         <div key={i} className="glass p-4 rounded-2xl flex items-center gap-4">
                              <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${stat.color}`}>

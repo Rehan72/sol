@@ -182,7 +182,7 @@ function EditInstallationTeam() {
         };
         await TeamService.updateTeam(id, payload);
         addToast('Installation Team Updated!', 'success');
-        navigate(`/installation-teams/${id}`);
+         navigate('/installation-teams');
       } catch (error) {
         addToast(error.response?.data?.message || 'Update failed', 'error');
       } finally {
@@ -191,13 +191,7 @@ function EditInstallationTeam() {
     }
   };
 
-  if (fetching) {
-    return (
-      <div className="min-h-screen bg-deep-navy flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-solar-yellow animate-spin" />
-      </div>
-    );
-  }
+  
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden font-inter">
@@ -366,13 +360,15 @@ function EditInstallationTeam() {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Operational Phase {TABS.findIndex(t => t.id === activeTab) + 1}</p>
                 <div className="flex gap-4">
                   {activeTab !== 'details' && (
-                    <Button type="button" variant="ghost" onClick={() => {
+                    <Button type="button" variant="ghost" onClick={(e) => {
+                        e.preventDefault();
                         const idx = TABS.findIndex(t => t.id === activeTab);
                         if (idx > 0) setActiveTab(TABS[idx - 1].id);
                     }} className="px-8 text-white/40 hover:text-white uppercase font-black text-xs tracking-widest">Back</Button>
                   )}
                   {activeTab !== 'members' ? (
-                    <Button type="button" onClick={() => {
+                    <Button type="button" onClick={(e) => {
+                        e.preventDefault();
                         const idx = TABS.findIndex(t => t.id === activeTab);
                         if (idx < TABS.length - 1) setActiveTab(TABS[idx + 1].id);
                     }} className="bg-solar-yellow text-deep-navy font-black px-10 rounded-full hover:bg-white hover:scale-105 transition-all shadow-lg flex items-center gap-2">CONTINUE <ChevronRight className="w-4 h-4" /></Button>

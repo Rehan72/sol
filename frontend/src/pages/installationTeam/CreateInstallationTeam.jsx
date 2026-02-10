@@ -172,7 +172,6 @@ function CreateInstallationTeam() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-debugger
     // Validate
     const newErrors = {};
     const fieldsToValidate = ['teamName', 'assignedCustomer'];
@@ -208,9 +207,9 @@ debugger
       console.log("Installation Team Created Successfully!", response);
       if(response){
         addToast('Installation Team Created Successfully!', 'success');
-        setTimeout(() => {
+       
           navigate('/installation-teams');
-        }, 1000);
+       
       }
         
       } catch (error) {

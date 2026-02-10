@@ -50,35 +50,6 @@ function SurveyTeamDetail() {
         if (id) fetchTeam();
     }, [id, addToast]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-deep-navy flex items-center justify-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center gap-4"
-                >
-                    <Loader2 className="w-12 h-12 text-solar-yellow animate-spin" />
-                    <p className="text-solar-yellow font-black uppercase tracking-widest animate-pulse">Scanning Site Data...</p>
-                </motion.div>
-            </div>
-        );
-    }
-
-    if (error || !team) {
-        return (
-            <div className="min-h-screen bg-deep-navy flex items-center justify-center p-6 text-center">
-                <div className="glass p-12 rounded-3xl border-red-500/20 max-w-md">
-                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-                    <h2 className="text-2xl font-black uppercase tracking-tighter mb-4">Frequency Lost</h2>
-                    <p className="text-white/60 mb-8">{error || "The survey team coordinates could not be retrieved."}</p>
-                    <Button onClick={() => navigate('/survey-teams')} className="bg-white/10 hover:bg-white/20 text-white rounded-full px-8">
-                        Return to Base
-                    </Button>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
@@ -225,9 +196,9 @@ function SurveyTeamDetail() {
                             className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                         >
                         {[
-                            { label: 'Sites Surveyed', value: team.members?.length > 5 ? '45' : '0', icon: CheckCircle2, color: 'text-emerald-400' },
-                            { label: 'Avg Time', value: '5 Hours', icon: Clock, color: 'text-solar-yellow' },
-                            { label: 'Pending', value: '3', icon: Calendar, color: 'text-orange-400' },
+                            { label: 'Sites Surveyed', value: team.stats?.completedJobs || 0, icon: CheckCircle2, color: 'text-emerald-400' },
+                            { label: 'Avg Time', value: team.stats?.avgCompletionTime || '5 Hours', icon: Clock, color: 'text-solar-yellow' },
+                            { label: 'Team Size', value: team.stats?.teamSize || 0, icon: Users, color: 'text-solar-yellow' },
                         ].map((stat, i) => (
                             <div key={i} className="glass p-4 rounded-2xl flex items-center gap-4">
                                 <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${stat.color}`}>
