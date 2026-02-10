@@ -159,7 +159,8 @@ function EditMaintenanceTeam() {
         }
     };
 
-    const handleAddMember = () => {
+    const handleAddMember = (e) => {
+        e.preventDefault();
         if (!selectedMemberId) return;
 
         const user = existingUsers.find(u => u.value === selectedMemberId);
@@ -224,11 +225,12 @@ function EditMaintenanceTeam() {
                     members: formData.members.map(m => ({ userId: m.userId, role: m.role }))
                 };
 
-                await TeamService.updateTeam(id, payload);
-                addToast('Maintenance Team Updated Successfully!', 'success');
-                setTimeout(() => {
+                const response = await TeamService.updateTeam(id, payload);
+                if (response) {
+                    addToast('Maintenance Team Updated Successfully!', 'success');
                     navigate(`/maintenance-teams/${id}`);
-                }, 1000);
+                    setLoading(false);
+                }
             } catch (error) {
                 console.error("Failed to update team", error);
                 addToast(error.response?.data?.message || 'Failed to update team', 'error');

@@ -9,30 +9,35 @@ import Master from "./router/Master";
 import { AnimatePresence } from "framer-motion";
 import EventAuditor from "./components/debug/EventAuditor";
 import { ToastProvider } from "./context/ToastContext";
+import { LoadingProvider } from "./context/LoadingContext";
+import GlobalLoader from "./components/ui/GlobalLoader";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
     <ToastProvider>
-      <div className="bg-deep-navy min-h-screen text-white">
-        <EventAuditor />
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <Preloader key="preloader" onComplete={() => setIsLoading(false)} />
-          ) : (
-            <Router>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/*" element={<Master />} />
-              </Routes>
-            </Router>
-          )}
-        </AnimatePresence>
-      </div>
+      <LoadingProvider>
+        <div className="bg-deep-navy min-h-screen text-white">
+          <EventAuditor />
+          <GlobalLoader />
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <Preloader key="preloader" onComplete={() => setIsLoading(false)} />
+            ) : (
+              <Router>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/*" element={<Master />} />
+                </Routes>
+              </Router>
+            )}
+          </AnimatePresence>
+        </div>
+      </LoadingProvider>
     </ToastProvider>
   );
 };

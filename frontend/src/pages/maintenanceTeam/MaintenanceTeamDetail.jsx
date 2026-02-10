@@ -39,6 +39,7 @@ function MaintenanceTeamDetail() {
                 const data = await TeamService.getTeamById(id);
                 setTeam(data);
                 setError(null);
+                setLoading(false);
             } catch (err) {
                 console.error("Failed to fetch team details", err);
                 setError("Failed to load team details");

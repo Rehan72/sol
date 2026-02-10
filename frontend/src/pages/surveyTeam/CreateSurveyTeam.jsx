@@ -169,7 +169,8 @@ function CreateSurveyTeam() {
     }
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = (e) => {
+    e.preventDefault();
     if (!selectedMemberId) return;
 
     const user = existingUsers.find(u => u.value === selectedMemberId);
@@ -195,7 +196,8 @@ function CreateSurveyTeam() {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e.preventDefault();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
     if (currentIndex < TABS.length - 1) {
       setActiveTab(TABS[currentIndex + 1].id);
@@ -243,10 +245,7 @@ function CreateSurveyTeam() {
           await TeamService.createTeam(payload);
           addToast('Survey Team Created Successfully!', 'success');
         }
-
-        setTimeout(() => {
-          navigate('/survey-teams');
-        }, 1000);
+       navigate('/survey-teams');
       } catch (error) {
         console.error("Failed to save team", error);
         addToast(error.response?.data?.message || 'Failed to save team', 'error');

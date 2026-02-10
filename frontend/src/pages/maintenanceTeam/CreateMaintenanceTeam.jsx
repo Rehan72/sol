@@ -205,11 +205,11 @@ function CreateMaintenanceTeam() {
                 };
 
                 const response = await TeamService.createTeam(payload);
-                console.log(response, "response");
-                addToast('Maintenance Team Created Successfully!', 'success');
-                setTimeout(() => {
+                if (response) {
+                    addToast('Maintenance Team Created Successfully!', 'success');
                     navigate('/maintenance-teams');
-                }, 1000);
+                    setLoading(false);
+                }
             } catch (error) {
                 console.error("Failed to create team", error);
                 addToast(error.response?.data?.message || 'Failed to create team', 'error');
