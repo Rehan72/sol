@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     ArrowLeft,
     Users,
@@ -15,7 +15,8 @@ import {
     AlertCircle,
     Tag,
     ChevronRight,
-    Wrench
+    Wrench,
+    Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Select from '../../components/ui/Select';
@@ -36,17 +37,20 @@ const TABS = [
     { id: 'members', label: 'Members', icon: Briefcase, description: 'Add engineers and technicians' },
 ];
 
-function CreateMaintenanceTeam() {
+function EditMaintenanceTeam() {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [activeTab, setActiveTab] = useState('details');
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
     const [existingUsers, setExistingUsers] = useState([]);
     const { addToast } = useToast();
     const [customers, setCustomers] = useState([]);
+    
     // Form State
     const [formData, setFormData] = useState({
         teamName: '',
-        teamCode: 'MAINT-' + Math.floor(Math.random() * 10000),
+        teamCode: '',
         assignedCustomer: '',
         status: 'active',
         teamType: 'MAINTENANCE',
@@ -54,10 +58,7 @@ function CreateMaintenanceTeam() {
         // Team Lead
         teamLeadMode: 'existing',
         teamLeadId: '',
-        leadName: '',
-        leadEmail: '',
-        leadPhone: '',
-
+        
         // Members
         members: []
     });
@@ -71,10 +72,41 @@ function CreateMaintenanceTeam() {
 
     useEffect(() => {
         const initData = async () => {
-            await Promise.all([fetchUsers(), fetchCustomers()]);
+            try {
+                setFetching(true);
+                await Promise.all([fetchUsers(), fetchCustomers(), fetchTeamDetails()]);
+            } catch (error) {
+                console.error("Initialization failed", error);
+            } finally {
+                setFetching(false);
+            }
         };
         initData();
-    }, []);
+    }, [id]);
+
+    const fetchTeamDetails = async () => {
+        try {
+            const team = await TeamService.getTeamById(id);
+            setFormData({
+                teamName: team.name,
+                teamCode: team.code,
+                assignedCustomer: team.customerId || '',
+                status: team.status,
+                teamType: team.type || 'MAINTENANCE',
+                teamLeadMode: 'existing',
+                teamLeadId: team.teamLeadId || '',
+                members: team.members.map(m => ({
+                    userId: m.userId,
+                    name: m.user?.name || 'Unknown',
+                    role: m.role
+                }))
+            });
+        } catch (error) {
+            console.error("Failed to fetch team details", error);
+            addToast("Failed to load team details", 'error');
+            navigate('/maintenance-teams');
+        }
+    };
 
     const fetchCustomers = async () => {
         try {
@@ -84,7 +116,6 @@ function CreateMaintenanceTeam() {
                 label: c.name || c.email
             }));
             setCustomers(customerOptions);
-            // Removed default selection to keep field empty initially
         } catch (error) {
             console.error("Failed to fetch customers", error);
             addToast("Failed to load customers", 'error');
@@ -110,19 +141,11 @@ function CreateMaintenanceTeam() {
     const validateField = (name, value) => {
         switch (name) {
             case 'teamName':
-                if (!value.trim()) return 'Team Name is required';
-                return '';
-            case 'leadName':
-            case 'leadEmail':
-            case 'leadPhone':
-                if (formData.teamLeadMode === 'new' && !value.trim()) return 'This field is required for new user';
+                if (!value?.trim()) return 'Team Name is required';
                 return '';
             case 'teamLeadId':
                 if (formData.teamLeadMode === 'existing' && !value) return 'Please select a team lead';
                 return '';
-            // case 'assignedCustomer':
-            //     if (!value) return 'Assigned Customer is required';
-            //     return '';
             default:
                 return '';
         }
@@ -175,9 +198,8 @@ function CreateMaintenanceTeam() {
 
         // Validate
         const newErrors = {};
-        const fieldsToValidate = ['teamName', 'assignedCustomer'];
+        const fieldsToValidate = ['teamName'];
         if (formData.teamLeadMode === 'existing') fieldsToValidate.push('teamLeadId');
-        if (formData.teamLeadMode === 'new') fieldsToValidate.push('leadName', 'leadEmail', 'leadPhone');
 
         fieldsToValidate.forEach(key => {
             const error = validateField(key, formData[key]);
@@ -196,23 +218,20 @@ function CreateMaintenanceTeam() {
             try {
                 const payload = {
                     name: formData.teamName,
-                    code: formData.teamCode,
-                    type: formData.teamType,
                     status: formData.status,
-                    customerId: formData.assignedCustomer,
-                    teamLeadId: formData.teamLeadMode === 'existing' ? formData.teamLeadId : null,
+                    customerId: formData.assignedCustomer || null,
+                    teamLeadId: formData.teamLeadId,
                     members: formData.members.map(m => ({ userId: m.userId, role: m.role }))
                 };
 
-                const response = await TeamService.createTeam(payload);
-                console.log(response, "response");
-                addToast('Maintenance Team Created Successfully!', 'success');
+                await TeamService.updateTeam(id, payload);
+                addToast('Maintenance Team Updated Successfully!', 'success');
                 setTimeout(() => {
-                    navigate('/maintenance-teams');
+                    navigate(`/maintenance-teams/${id}`);
                 }, 1000);
             } catch (error) {
-                console.error("Failed to create team", error);
-                addToast(error.response?.data?.message || 'Failed to create team', 'error');
+                console.error("Failed to update team", error);
+                addToast(error.response?.data?.message || 'Failed to update team', 'error');
             } finally {
                 setLoading(false);
             }
@@ -221,6 +240,15 @@ function CreateMaintenanceTeam() {
             addToast(firstError, 'error');
         }
     };
+
+    if (fetching) {
+        return (
+            <div className="min-h-screen bg-deep-navy flex flex-col items-center justify-center text-white">
+                <Loader2 className="w-12 h-12 text-solar-yellow animate-spin mb-4" />
+                <p className="text-white/60 font-medium uppercase tracking-widest animate-pulse">Initializing Data Stream...</p>
+            </div>
+        );
+    }
 
     const renderContent = () => {
         switch (activeTab) {
@@ -268,32 +296,23 @@ function CreateMaintenanceTeam() {
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                         <div className="flex gap-4 mb-6">
-                            <Button type="button" onClick={() => setFormData({ ...formData, teamLeadMode: 'existing' })} className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-xs transition-colors border h-auto ${formData.teamLeadMode === 'existing' ? 'bg-white/10 border-solar-yellow text-solar-yellow' : 'bg-transparent border-white/10 text-white/40 hover:text-white'}`}>
+                            <Button type="button" className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-xs transition-colors border h-auto bg-white/10 border-solar-yellow text-solar-yellow`}>
                                 Select Existing User
-                            </Button>
-                            <Button type="button" disabled title="Not implemented" className={`flex-1 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-xs transition-colors border h-auto opacity-50 cursor-not-allowed bg-transparent border-white/10 text-white/40`}>
-                                Create New User (Coming Soon)
                             </Button>
                         </div>
 
-                        {formData.teamLeadMode === 'existing' ? (
-                            <div className="relative">
-                                <Select
-                                    name="teamLeadId"
-                                    label="Select Team Lead"
-                                    value={formData.teamLeadId}
-                                    onChange={handleChange}
-                                    options={existingUsers}
-                                    icon={User}
-                                    placeholder="Choose a user..."
-                                    error={touched.teamLeadId && errors.teamLeadId}
-                                />
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Placeholder */}
-                            </div>
-                        )}
+                        <div className="relative">
+                            <Select
+                                name="teamLeadId"
+                                label="Select Team Lead"
+                                value={formData.teamLeadId}
+                                onChange={handleChange}
+                                options={existingUsers}
+                                icon={User}
+                                placeholder="Choose a user..."
+                                error={touched.teamLeadId && errors.teamLeadId}
+                            />
+                        </div>
                     </div>
                 );
             case 'members':
@@ -352,7 +371,7 @@ function CreateMaintenanceTeam() {
                                         >
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-linear-to-br from-solar-yellow to-orange-500 flex items-center justify-center font-bold text-deep-navy">
-                                                    {member.name.charAt(0)}
+                                                    {member.name?.charAt(0) || 'M'}
                                                 </div>
                                                 <div>
                                                     <p className="font-bold">{member.name}</p>
@@ -392,14 +411,14 @@ function CreateMaintenanceTeam() {
             <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    <Button variant="ghost" onClick={() => navigate('/maintenance-teams')} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent">
+                    <Button variant="ghost" onClick={() => navigate(`/maintenance-teams/${id}`)} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent group">
                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-solar-yellow" />
+                            <ArrowLeft className="w-5 h-5 text-solar-yellow group-hover:-translate-x-1 transition-transform" />
                         </div>
-                        <span className="text-sm text-solar-yellow font-bold uppercase tracking-widest">Back to Teams</span>
+                        <span className="text-sm text-solar-yellow font-bold uppercase tracking-widest">Back to Details</span>
                     </Button>
                     <h1 className="text-2xl font-black uppercase rim-light tracking-tighter">
-                        Create <span className="text-solar-yellow">Maintenance Team</span>
+                        Edit <span className="text-solar-yellow">Maintenance Team</span>
                     </h1>
                 </div>
 
@@ -481,9 +500,10 @@ function CreateMaintenanceTeam() {
                                     ) : (
                                         <Button
                                             type="submit"
-                                            className="bg-solar-yellow hover:bg-gold text-deep-navy font-bold px-8 shadow-[0_0_20px_rgba(255,215,0,0.3)]"
+                                            disabled={loading}
+                                            className="bg-solar-yellow hover:bg-gold text-deep-navy font-bold px-8 shadow-[0_0_20px_rgba(255,215,0,0.3)] disabled:opacity-50"
                                         >
-                                            Create Team <CheckCircle2 className="w-4 h-4 ml-2" />
+                                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Update Team <CheckCircle2 className="w-4 h-4 ml-2" /></>}
                                         </Button>
                                     )}
                                 </div>
@@ -522,4 +542,4 @@ const FormField = ({ name, label, required, children, className = '', touched = 
     </div>
 );
 
-export default CreateMaintenanceTeam;
+export default EditMaintenanceTeam;

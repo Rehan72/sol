@@ -11,16 +11,13 @@ const client = axios.create({
 client.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
-    console.log(`>>> [AXIOS REQUEST] ${config.method?.toUpperCase()} ${config.url}`);
     
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('>>> [HEADERS] Authorization set to Bearer ' + token.substring(0, 10) + '...');
     } else {
       console.warn('>>> [HEADERS] NO ACCESS_TOKEN FOUND');
     }
 
-    console.log('>>> [FULL HEADERS]', config.headers);
     return config;
   },
   (error) => {

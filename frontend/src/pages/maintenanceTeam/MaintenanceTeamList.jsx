@@ -175,7 +175,7 @@ function MaintenanceTeamList() {
                                 View Team Details
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                onClick={() => cellNavigate(`/maintenance-teams/${team.id}`)}
+                                onClick={() => cellNavigate(`/maintenance-teams/edit/${team.id}`)}
                             >
                                 Edit Team
                             </DropdownMenuItem>

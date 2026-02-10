@@ -120,9 +120,9 @@ function CreateInstallationTeam() {
       case 'teamLeadId':
         if (formData.teamLeadMode === 'existing' && !value) return 'Please select a team lead';
         return '';
-      case 'assignedCustomer':
-        if (!value) return 'Assigned Customer is required';
-        return '';
+      // case 'assignedCustomer':
+      //   if (!value) return 'Assigned Customer is required';
+      //   return '';
       default:
         return '';
     }
@@ -162,7 +162,8 @@ function CreateInstallationTeam() {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e.preventDefault();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
     if (currentIndex < TABS.length - 1) {
       setActiveTab(TABS[currentIndex + 1].id);
@@ -171,7 +172,7 @@ function CreateInstallationTeam() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+debugger
     // Validate
     const newErrors = {};
     const fieldsToValidate = ['teamName', 'assignedCustomer'];
@@ -203,11 +204,15 @@ function CreateInstallationTeam() {
           members: formData.members.map(m => ({ userId: m.userId, role: m.role }))
         };
 
-        await TeamService.createTeam(payload);
+      const response =  await TeamService.createTeam(payload);
+      console.log("Installation Team Created Successfully!", response);
+      if(response){
         addToast('Installation Team Created Successfully!', 'success');
         setTimeout(() => {
           navigate('/installation-teams');
         }, 1000);
+      }
+        
       } catch (error) {
         console.error("Failed to create team", error);
         addToast(error.response?.data?.message || 'Failed to create team', 'error');

@@ -1,6 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
   Users, 
@@ -14,42 +13,73 @@ import {
   MapPin,
   Tag,
   Pen,
-  CheckCircle2
+  CheckCircle2,
+  Plus,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import TeamService from '../../services/TeamService';
+import { useToast } from '../../hooks/useToast';
+import { useEffect, useState } from 'react';
 
-// Mock Data
-const TEAM_DATA = {
-    id: 1,
-    teamName: 'Alpha Installers',
-    teamCode: 'TEAM-8293',
-    status: 'active',
-    assignedPlant: 'Sector 45 Residence',
-    teamLead: {
-        name: 'Robert Fox',
-        email: 'robert.fox@example.com',
-        phone: '+1 (555) 123-4567',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop'
-    },
-    members: [
-        { id: 'm1', name: 'Guy Hawkins', role: 'Installer', avatar: null },
-        { id: 'm2', name: 'Devon Lane', role: 'Electrician', avatar: null },
-        { id: 'm3', name: 'Courtney Henry', role: 'Helper', avatar: null },
-        { id: 'm4', name: 'Ralph Edwards', role: 'Technician', avatar: null },
-    ],
-    stats: {
-        completedJobs: 14,
-        ongoingJobs: 2,
-        avgCompletionTime: '3 Days'
-    }
-};
+
 
 function InstallationTeamDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [team, setTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { addToast } = useToast();
   
-  // In real app, fetch team by ID
-  const team = TEAM_DATA;
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        setLoading(true);
+        const data = await TeamService.getTeamById(id);
+        setTeam(data);
+      } catch (err) {
+        console.error("Failed to fetch installation team", err);
+        setError(err.response?.data?.message || err.message);
+        addToast("Unable to load team details", 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) fetchTeam();
+  }, [id, addToast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-deep-navy flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Loader2 className="w-12 h-12 text-solar-yellow animate-spin" />
+          <p className="text-solar-yellow font-black uppercase tracking-widest animate-pulse">Accessing Data Stream...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error || !team) {
+    return (
+      <div className="min-h-screen bg-deep-navy flex items-center justify-center p-6 text-center">
+        <div className="glass p-12 rounded-3xl border-red-500/20 max-w-md">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-black uppercase tracking-tighter mb-4">Access Denied</h2>
+          <p className="text-white/60 mb-8">{error || "The requested team frequency could not be found."}</p>
+          <Button onClick={() => navigate('/installation-teams')} className="bg-white/10 hover:bg-white/20 text-white rounded-full px-8">
+            Return to Base
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
@@ -59,7 +89,7 @@ function InstallationTeamDetail() {
       <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
       <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-solar-yellow/5 blur-[150px] rounded-full pointer-events-none" />
 
-      <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8 max-w-6xl">
+      <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-4">
@@ -68,10 +98,22 @@ function InstallationTeamDetail() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-black uppercase rim-light tracking-tighter">
-                        {team.teamName}
+                        {team.name.split(' ').length > 1 ? (
+                            <>
+                                {team.name.split(' ').slice(0, -1).join(' ')}{' '}
+                                <span className="text-solar-yellow">{team.name.split(' ').slice(-1)}</span>
+                            </>
+                        ) : team.name.includes('-') ? (
+                            <>
+                                {team.name.split('-').slice(0, -1).join('-')}-
+                                <span className="text-solar-yellow">{team.name.split('-').slice(-1)}</span>
+                            </>
+                        ) : (
+                            team.name
+                        )}
                     </h1>
                     <div className="flex items-center gap-3 text-white/50 text-sm mt-1">
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Team ID: {team.teamCode}</span>
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Team ID: {team.code}</span>
                         <span className="w-1 h-1 rounded-full bg-white/30" />
                         <span className="flex items-center gap-1 text-emerald-400"><ShieldCheck className="w-3 h-3" /> {team.status}</span>
                     </div>
@@ -79,7 +121,10 @@ function InstallationTeamDetail() {
             </div>
 
             <div className="flex gap-3">
-                 <Button className="glass hover:bg-white/10 text-white border border-white/10">
+                 <Button 
+                    onClick={() => navigate(`/installation-teams/edit/${team.id}`)}
+                    className="glass hover:bg-white/10 text-white border border-white/10"
+                 >
                      <Pen className="w-4 h-4 mr-2" /> Edit Team
                  </Button>
             </div>
@@ -100,15 +145,15 @@ function InstallationTeamDetail() {
                     </h3>
 
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden">
-                             {team.teamLead.avatar ? (
+                        <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden flex items-center justify-center">
+                             {team.teamLead?.avatar ? (
                                 <img src={team.teamLead.avatar} alt={team.teamLead.name} className="w-full h-full object-cover" />
                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xl font-bold">{team.teamLead.name.charAt(0)}</div>
+                                <div className="w-full h-full flex items-center justify-center text-xl font-bold">{team.teamLead?.name?.charAt(0) || team.teamLead?.email?.charAt(0) || '?'}</div>
                              )}
                         </div>
                         <div>
-                            <p className="text-xl font-bold">{team.teamLead.name}</p>
+                            <p className="text-xl font-bold">{team.teamLead?.name || team.teamLead?.email || 'Unassigned'}</p>
                             <p className="text-solar-yellow text-sm font-medium">Lead Installer</p>
                         </div>
                     </div>
@@ -120,7 +165,7 @@ function InstallationTeamDetail() {
                             </div>
                             <div>
                                 <p className="text-xs text-white/40 uppercase font-bold">Email</p>
-                                <p className="text-sm font-medium">{team.teamLead.email}</p>
+                                <p className="text-sm font-medium">{team.teamLead?.email || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
@@ -129,7 +174,7 @@ function InstallationTeamDetail() {
                             </div>
                             <div>
                                 <p className="text-xs text-white/40 uppercase font-bold">Mobile</p>
-                                <p className="text-sm font-medium">{team.teamLead.phone}</p>
+                                <p className="text-sm font-medium">{team.teamLead?.phone || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
@@ -145,10 +190,10 @@ function InstallationTeamDetail() {
                         <Briefcase className="w-4 h-4 text-solar-yellow" /> Assignment
                     </h3>
                     <div className="p-4 rounded-xl bg-linear-to-br from-white/5 to-white/0 border border-white/10">
-                        <p className="text-xs text-white/40 uppercase font-bold mb-1">Assigned Grid Plant</p>
-                        <p className="text-lg font-bold text-white mb-2">{team.assignedPlant}</p>
+                        <p className="text-xs text-white/40 uppercase font-bold mb-1">Assigned Customer</p>
+                        <p className="text-lg font-bold text-white mb-2">{team.customer?.name || team.customer?.email || 'Unassigned'}</p>
                         <div className="flex items-center gap-2 text-xs text-white/50">
-                            <MapPin className="w-3 h-3" /> Gurugram, Haryana
+                            <MapPin className="w-3 h-3" /> {team.customer?.city || 'Location N/A'}
                         </div>
                     </div>
                 </motion.div>
@@ -164,9 +209,9 @@ function InstallationTeamDetail() {
                     className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                 >
                     {[
-                        { label: 'Completed Jobs', value: team.stats.completedJobs, icon: CheckCircle2, color: 'text-emerald-400' },
-                        { label: 'Avg Completion', value: team.stats.avgCompletionTime, icon: Clock, color: 'text-white' },
-                        { label: 'Team Size', value: team.members.length + 1, icon: Users, color: 'text-solar-yellow' },
+                        { label: 'Completed Jobs', value: team.members.length > 5 ? '14' : '0', icon: CheckCircle2, color: 'text-emerald-400' },
+                        { label: 'Avg Completion', value: '3 Days', icon: Clock, color: 'text-white' },
+                        { label: 'Team Size', value: (team.members?.length || 0) + (team.teamLead ? 1 : 0), icon: Users, color: 'text-solar-yellow' },
                     ].map((stat, i) => (
                         <div key={i} className="glass p-4 rounded-2xl flex items-center gap-4">
                              <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${stat.color}`}>
@@ -198,14 +243,14 @@ function InstallationTeamDetail() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {team.members.map((member) => (
+                        {team.members?.map((member) => (
                             <div key={member.id} className="group p-4 rounded-xl bg-white/5 border border-white/5 hover:border-solar-yellow/30 hover:bg-white/10 transition-all flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center font-bold text-white/80 border border-white/10">
-                                        {member.name.charAt(0)}
+                                        {member.user?.name?.charAt(0) || member.user?.email?.charAt(0) || '?'}
                                     </div>
                                     <div>
-                                        <p className="font-bold group-hover:text-solar-yellow transition-colors">{member.name}</p>
+                                        <p className="font-bold group-hover:text-solar-yellow transition-colors">{member.user?.name || member.user?.email || 'Unknown'}</p>
                                         <div className="flex items-center gap-1.5 mt-0.5">
                                             <Tag className="w-3 h-3 text-white/30" />
                                             <span className="text-xs font-medium text-white/60 uppercase tracking-wide">{member.role}</span>
@@ -213,12 +258,21 @@ function InstallationTeamDetail() {
                                     </div>
                                 </div>
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-white/20">
+                                    <Button 
+                                        onClick={() => navigate(`/installation-teams/edit/${team.id}`)}
+                                        variant="ghost" 
+                                        className="h-8 w-8 p-0 rounded-full hover:bg-white/20"
+                                    >
                                         <Pen className="w-3 h-3" />
                                     </Button>
                                 </div>
                             </div>
                         ))}
+                        {(!team.members || team.members.length === 0) && (
+                            <div className="col-span-2 text-center py-8 border border-white/5 rounded-xl bg-white/5">
+                                <p className="text-white/40 italic">No additional crew members recruited.</p>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 

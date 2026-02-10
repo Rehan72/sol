@@ -89,7 +89,21 @@ function SurveyTeamList() {
           <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
             <Map className="w-5 h-5 text-solar-yellow" />
           </div>
-          <div className="font-bold">{row.getValue("name")}</div>
+          <div className="font-bold">
+            {row.getValue("name").split(' ').length > 1 ? (
+              <>
+                {row.getValue("name").split(' ').slice(0, -1).join(' ')}{' '}
+                <span className="text-solar-yellow">{row.getValue("name").split(' ').slice(-1)}</span>
+              </>
+            ) : row.getValue("name").includes('-') ? (
+              <>
+                {row.getValue("name").split('-').slice(0, -1).join('-')}-
+                <span className="text-solar-yellow">{row.getValue("name").split('-').slice(-1)}</span>
+              </>
+            ) : (
+              row.getValue("name")
+            )}
+          </div>
         </div>
       ),
     },

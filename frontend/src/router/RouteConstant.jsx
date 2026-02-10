@@ -9,9 +9,11 @@ import CreatePlantAdmin from "../pages/plants/plantAdmin/CreatePlantAdmin";
 import PlantAdminList from "../pages/plants/plantAdmin/PlantAdminList";
 import CreateInstallationTeam from "../pages/installationTeam/CreateInstallationTeam";
 import InstallationTeamDetail from "../pages/installationTeam/InstallationTeamDetail";
+import EditInstallationTeam from "../pages/installationTeam/EditInstallationTeam";
 import SurveyTeamList from "../pages/surveyTeam/SurveyTeamList";
 import CreateSurveyTeam from "../pages/surveyTeam/CreateSurveyTeam";
 import SurveyTeamDetail from "../pages/surveyTeam/SurveyTeamDetail";
+import EditSurveyTeam from "../pages/surveyTeam/EditSurveyTeam";
 import InstallationWorkflow from "../pages/workflow/InstallationWorkflow";
 import InstallationTeamList from "../pages/installationTeam/InstallationTeamList";
 import HandoffReview from "../pages/workflow/HandoffReview";
@@ -31,6 +33,7 @@ import EmployeesList from "../pages/employees/EmployeesList";
 import CreateEmployees from "../pages/employees/CreateEmployees";
 import PlantAdminDashboard from "../pages/plants/plantAdmin/PlantAdminDashboard";
 import CreateMaintenanceTeam from "../pages/maintenanceTeam/CreateMaintenanceTeam";
+import EditMaintenanceTeam from "../pages/maintenanceTeam/EditMaintenanceTeam";
 import MaintenanceTeamList from "../pages/maintenanceTeam/MaintenanceTeamList";
 import MaintenanceTeamDetail from "../pages/maintenanceTeam/MaintenanceTeamDetail";
 import CreateSurvey from "../pages/surveys/CreateSurvey";
@@ -129,6 +132,11 @@ export default [
     exact: true
   },
   {
+    element: EditInstallationTeam,
+    path: `installation-teams/edit/:id`,
+    exact: true
+  },
+  {
     element: SurveyTeamList,
     path: `survey-teams`,
     exact: true
@@ -139,7 +147,7 @@ export default [
     exact: true
   },
   {
-    element: CreateSurveyTeam,
+    element: EditSurveyTeam,
     path: `survey-teams/edit/:id`,
     exact: true
   },
@@ -241,6 +249,11 @@ export default [
   {
     element: CreateMaintenanceTeam,
     path: `maintenance-teams/create`,
+    exact: true
+  },
+  {
+    element: EditMaintenanceTeam,
+    path: `maintenance-teams/edit/:id`,
     exact: true
   },
   {
