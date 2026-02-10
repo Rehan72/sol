@@ -25,7 +25,7 @@ import {
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport
 import { useParams } from 'react-router-dom';
-import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase } from '../../api/workflow';
+import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase, markInstallationComplete, resetWorkflow } from '../../api/workflow';
 import { getCustomerProfile } from '../../api/customer';
 
 // --- Constants & Mock Data ---
@@ -37,26 +37,10 @@ const PHASES = [
     { id: 'live', label: 'Live', description: 'Monitoring' }
 ];
 
-const INSTALLATION_STEPS = [
-    { id: 'mounting', label: 'Mounting', status: 'completed', date: '2023-10-18', completedBy: 'Installation Team Alpha' },
-    { id: 'inverter', label: 'Inverter', status: 'in_progress', date: null, completedBy: null },
-    { id: 'wiring', label: 'Wiring', status: 'pending', date: null, completedBy: null },
-    { id: 'inspection', label: 'QC Inspection', status: 'pending', date: null, completedBy: null },
-];
 
-const INSTALLATION_DATA = {
-    plantName: 'Sector 45 Residence',
-    capacity: '5 MW',
-    status: 'ACTIVE',
-    startDate: '2023-10-15',
-    assignedTeam: {
-        name: 'Installation Team Alpha',
-        lead: 'John Doe',
-        contact: '+91 98765 43210'
-    }
-};
 
-// --- Components ---
+
+
 
 const TimelineNode = ({ phase, isLast }) => {
     const isActive = phase.status === 'in_progress';
@@ -105,7 +89,48 @@ function InstallationWorkflow() {
     const [customerData, setCustomerData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [advancingPhase, setAdvancingPhase] = useState(false);
-
+    
+    // Technical form state
+    const [technicalData, setTechnicalData] = useState({
+        pvModuleMake: '',
+        totalModules: '',
+        inverterSerialNo: '',
+        inverterCapacity: '',
+        acdbInstalled: false,
+        dcdbInstalled: false,
+        earthingPitsReady: false,
+        cableDressingComplete: false,
+        safetySignsDisplayed: false,
+        readyForCommissioning: false,
+        notes: '',
+        photos: []  // Array to store photo URLs/filenames
+    });
+    
+    // Photo upload handler
+    const handlePhotoUpload = (e) => {
+        const files = Array.from(e.target.files);
+        // In production, upload to server and get URLs
+        // For now, create local object URLs for preview
+        const newPhotos = files.map(file => ({
+            name: file.name,
+            url: URL.createObjectURL(file),
+            uploadedAt: new Date().toISOString()
+        }));
+        setTechnicalData(prev => ({
+            ...prev,
+            photos: [...prev.photos, ...newPhotos]
+        }));
+    };
+    
+    // Remove photo
+    const handleRemovePhoto = (index) => {
+        setTechnicalData(prev => ({
+            ...prev,
+            photos: prev.photos.filter((_, i) => i !== index)
+        }));
+    };
+  console.log(customerId,'customerId');
+  
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -186,7 +211,17 @@ function InstallationWorkflow() {
                             date: s.updatedAt,
                             completedBy: s.assignedToId // we only have ID, ideally populate name
                         }));
-                        setSteps(mappedSteps);
+                        
+                        // Deduplicate steps by stepId (keep first occurrence)
+                        const uniqueSteps = [];
+                        const seenStepIds = new Set();
+                        for (const step of mappedSteps) {
+                            if (!seenStepIds.has(step.id)) {
+                                seenStepIds.add(step.id);
+                                uniqueSteps.push(step);
+                            }
+                        }
+                        setSteps(uniqueSteps);
 
                         // Set active step to first in-progress or pending
                         const invalidStep = mappedSteps.find(s => s.status === 'in_progress' || s.status === 'pending');
@@ -204,6 +239,10 @@ function InstallationWorkflow() {
         };
         fetchData();
     }, [customerId]);
+
+    console.log(steps,'steps');
+    console.log(customerData,'customerData');
+    
 
     const handleAdvancePhase = async (nextPhase) => {
         if (!customerId) return;
@@ -233,7 +272,7 @@ function InstallationWorkflow() {
         if (!current || !current.dbId) return;
 
         try {
-            await updateWorkflowStep(current.dbId, { status: 'completed' });
+            // await updateWorkflowStep(current.dbId, { status: 'completed' });
             // Optimistic update
             setSteps(prev => prev.map(s => s.id === activeStepId ? { ...s, status: 'completed' } : s));
 
@@ -250,6 +289,37 @@ function InstallationWorkflow() {
             console.error("Update failed", err);
         }
     }
+
+    const handleSaveTechnicalData = async () => {
+        try {
+            // Save technical data for the current step
+            const current = steps.find(s => s.id === activeStepId);
+            if (current && current.dbId) {
+                await updateWorkflowStep(current.dbId, { 
+                    status: current.status,
+                    technicalData: technicalData 
+                });
+                setShowTechnicalForm(false);
+            }
+        } catch (error) {
+            console.error("Failed to save technical data", error);
+        }
+    };
+
+    const handleMarkInstallationComplete = async () => {
+        if (!customerId) return;
+        try {
+            setAdvancingPhase(true);
+            await markInstallationComplete(customerId);
+            // Update local state to reflect completion
+            setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
+            setActivePhase('commissioning');
+        } catch (error) {
+            console.error('Failed to mark installation as complete:', error);
+        } finally {
+            setAdvancingPhase(false);
+        }
+    };
 
     const currentStep = steps.find(s => s.id === activeStepId);
 
@@ -565,19 +635,40 @@ function InstallationWorkflow() {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="text-xs text-white/40 block mb-1">PV Module Make</label>
-                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="e.g. Trina Solar" />
+                                                        <input 
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm"
+                                                            placeholder="e.g. Trina Solar"
+                                                            value={technicalData.pvModuleMake}
+                                                            onChange={(e) => setTechnicalData({...technicalData, pvModuleMake: e.target.value})}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs text-white/40 block mb-1">Total Modules</label>
-                                                        <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="18" />
+                                                        <input 
+                                                            type="number" 
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm"
+                                                            placeholder="18"
+                                                            value={technicalData.totalModules}
+                                                            onChange={(e) => setTechnicalData({...technicalData, totalModules: e.target.value})}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs text-white/40 block mb-1">Inverter Serial No.</label>
-                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="SN-XXXX-YYYY" />
+                                                        <input 
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm"
+                                                            placeholder="SN-XXXX-YYYY"
+                                                            value={technicalData.inverterSerialNo}
+                                                            onChange={(e) => setTechnicalData({...technicalData, inverterSerialNo: e.target.value})}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs text-white/40 block mb-1">Inverter Capacity</label>
-                                                        <input className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm" placeholder="5 kW" />
+                                                        <input 
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm"
+                                                            placeholder="5 kW"
+                                                            value={technicalData.inverterCapacity}
+                                                            onChange={(e) => setTechnicalData({...technicalData, inverterCapacity: e.target.value})}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
@@ -586,12 +677,51 @@ function InstallationWorkflow() {
                                             <div className="space-y-4">
                                                 <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Electrical Checklist</h4>
                                                 <div className="space-y-2">
-                                                    {['ACDB Installed & Wired', 'DCDB Installed & Wired', 'Earthing Pits Ready', 'Cable Dressing Complete', 'Safety Signs Displayed'].map((item, i) => (
-                                                        <label key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
-                                                            <input type="checkbox" className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow" />
-                                                            <span className="text-sm text-white/80">{item}</span>
-                                                        </label>
-                                                    ))}
+                                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow"
+                                                            checked={technicalData.acdbInstalled}
+                                                            onChange={(e) => setTechnicalData({...technicalData, acdbInstalled: e.target.checked})}
+                                                        />
+                                                        <span className="text-sm text-white/80">ACDB Installed & Wired</span>
+                                                    </label>
+                                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow"
+                                                            checked={technicalData.dcdbInstalled}
+                                                            onChange={(e) => setTechnicalData({...technicalData, dcdbInstalled: e.target.checked})}
+                                                        />
+                                                        <span className="text-sm text-white/80">DCDB Installed & Wired</span>
+                                                    </label>
+                                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow"
+                                                            checked={technicalData.earthingPitsReady}
+                                                            onChange={(e) => setTechnicalData({...technicalData, earthingPitsReady: e.target.checked})}
+                                                        />
+                                                        <span className="text-sm text-white/80">Earthing Pits Ready</span>
+                                                    </label>
+                                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow"
+                                                            checked={technicalData.cableDressingComplete}
+                                                            onChange={(e) => setTechnicalData({...technicalData, cableDressingComplete: e.target.checked})}
+                                                        />
+                                                        <span className="text-sm text-white/80">Cable Dressing Complete</span>
+                                                    </label>
+                                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-4 h-4 rounded bg-deep-navy border-white/20 accent-solar-yellow"
+                                                            checked={technicalData.safetySignsDisplayed}
+                                                            onChange={(e) => setTechnicalData({...technicalData, safetySignsDisplayed: e.target.checked})}
+                                                        />
+                                                        <span className="text-sm text-white/80">Safety Signs Displayed</span>
+                                                    </label>
                                                 </div>
                                             </div>
 
@@ -600,7 +730,12 @@ function InstallationWorkflow() {
                                                 <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Handoff Readiness</h4>
                                                 <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                                                     <label className="flex items-center gap-3 cursor-pointer">
-                                                        <input type="checkbox" className="w-5 h-5 rounded bg-deep-navy border-white/20 accent-emerald-500" />
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="w-5 h-5 rounded bg-deep-navy border-white/20 accent-emerald-500"
+                                                            checked={technicalData.readyForCommissioning}
+                                                            onChange={(e) => setTechnicalData({...technicalData, readyForCommissioning: e.target.checked})}
+                                                        />
                                                         <div>
                                                             <p className="font-bold text-emerald-400">Ready for Commissioning</p>
                                                             <p className="text-xs text-white/40">Confirm that all physical installation work is complete and safe.</p>
@@ -608,14 +743,65 @@ function InstallationWorkflow() {
                                                     </label>
                                                 </div>
                                             </div>
+
+                                            {/* Photos Upload */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Photos</h4>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {/* Upload Button */}
+                                                    <label className="aspect-square bg-white/5 rounded-lg border border-white/10 flex items-center justify-center text-white/20 hover:bg-white/10 cursor-pointer transition-colors">
+                                                        <input 
+                                                            type="file" 
+                                                            multiple 
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={handlePhotoUpload}
+                                                        />
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <Camera className="w-5 h-5" />
+                                                            <span className="text-[10px]">Add</span>
+                                                        </div>
+                                                    </label>
+                                                    
+                                                    {/* Photo Previews */}
+                                                    {technicalData.photos.map((photo, index) => (
+                                                        <div key={index} className="aspect-square bg-white/5 rounded-lg border border-white/10 relative group overflow-hidden">
+                                                            <img 
+                                                                src={photo.url} 
+                                                                alt={photo.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                <button 
+                                                                    onClick={() => handleRemovePhoto(index)}
+                                                                    className="p-1 bg-red-500/80 rounded-full hover:bg-red-500"
+                                                                >
+                                                                    <X className="w-3 h-3 text-white" />
+                                                                </button>
+                                                            </div>
+                                                            <span className="absolute bottom-0 left-0 right-0 text-[8px] bg-black/60 text-white/80 p-1 truncate">
+                                                                {photo.name}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Notes */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Notes</h4>
+                                                <textarea 
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm min-h-[80px]"
+                                                    placeholder="Add remarks..."
+                                                    value={technicalData.notes}
+                                                    onChange={(e) => setTechnicalData({...technicalData, notes: e.target.value})}
+                                                />
+                                            </div>
                                         </div>
 
                                         <div className="pt-6 mt-4 border-t border-white/10 flex justify-end gap-3">
                                             <Button variant="ghost" onClick={() => setShowTechnicalForm(false)}>Cancel</Button>
-                                            <Button className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold" onClick={() => {
-                                                // Save logic mock
-                                                setShowTechnicalForm(false);
-                                            }}>
+                                            <Button className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold" onClick={handleSaveTechnicalData}>
                                                 Save Details
                                             </Button>
                                         </div>
@@ -626,30 +812,39 @@ function InstallationWorkflow() {
                                 <div className="glass rounded-2xl p-6 border-l-4 border-l-solar-yellow flex flex-col md:flex-row justify-between items-center gap-6">
                                     <div>
                                         <h2 className="text-xl font-black uppercase tracking-wide">Installation Phase</h2>
-                                        <p className="text-solar-yellow font-bold uppercase text-xs tracking-widest mt-1">Status: In Progress</p>
+                                        <p className={`${customerData?.installationStatus === 'COMPLETED' ? 'text-emerald-400' : 'text-solar-yellow'} font-bold uppercase text-xs tracking-widest mt-1`}>
+                                            Status: {customerData?.installationStatus === 'COMPLETED' ? 'Completed' : 'In Progress'}
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        {steps.length > 0 && steps.every(s => s.status === 'completed') ? (
-                                            <Button 
-                                                onClick={() => handleAdvancePhase('commissioning')} 
-                                                disabled={advancingPhase}
-                                                className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
-                                            >
-                                                <Zap className="w-4 h-4 mr-2" />
-                                                {advancingPhase ? 'Advancing...' : 'Complete & Advance to Commissioning'}
-                                            </Button>
+                                        {customerData?.installationStatus === 'COMPLETED' ? (
+                                            <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 font-bold uppercase text-xs tracking-widest rounded-lg border border-emerald-500/30">
+                                                Installation Completed
+                                            </span>
                                         ) : (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
-                                                onClick={() => setShowTechnicalForm(true)}
-                                            >
-                                                <FileText className="w-4 h-4 mr-2" /> Update Technical Data
-                                            </Button>
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
+                                                    onClick={() => setShowTechnicalForm(true)}
+                                                >
+                                                    <FileText className="w-4 h-4 mr-2" /> Update Technical Data
+                                                </Button>
+                                                <Button 
+                                                    onClick={handleMarkInstallationComplete} 
+                                                    disabled={advancingPhase}
+                                                    className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
+                                                >
+                                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                    {advancingPhase ? 'Completing...' : 'Mark as Completed'}
+                                                </Button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
+                                
+                                
 
                                 {/* Horizontal Stepper */}
                                 <div className="glass rounded-2xl p-6 overflow-x-auto">

@@ -19,3 +19,13 @@ export const advanceWorkflowPhase = async (customerId, nextPhase) => {
     const response = await API.post(`/workflow/advance/${customerId}`, { phase: nextPhase });
     return response.data;
 };
+
+export const markInstallationComplete = async (customerId) => {
+    const response = await API.post(`/workflow/complete/${customerId}`);
+    return response.data;
+};
+
+export const resetWorkflow = async (customerId) => {
+    const response = await API.post(`/workflow/reset/${customerId}`);
+    return response.data;
+};

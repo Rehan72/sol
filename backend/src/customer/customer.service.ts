@@ -82,11 +82,24 @@ export class CustomerService {
   async getProfile(userId: string) {
     const user = await this.usersRepo.findOne({
       where: { id: userId },
-      // relations: ['plant'], // 'plant' is a jsonb column, not a relation
     });
 
     if (!user) return null;
 
+    return this.formatCustomerResponse(user);
+  }
+
+  async getCustomerById(customerId: string) {
+    const user = await this.usersRepo.findOne({
+      where: { id: customerId },
+    });
+
+    if (!user) return null;
+
+    return this.formatCustomerResponse(user);
+  }
+
+  private async formatCustomerResponse(user: User) {
     // Fetch full Plant details
     let plantDetails = null;
     if (user.plant?.id) {
@@ -103,18 +116,18 @@ export class CustomerService {
           name: regionAdmin.name,
           email: regionAdmin.email,
           phone: regionAdmin.phone,
-          regionName: regionAdmin.regionName, // Assuming the admin has this field
+          regionName: regionAdmin.regionName,
         };
       }
     }
 
-    // Fetch Plant Admin details (already partially there, but refining)
+    // Fetch Plant Admin details
     let plantAdminDetails = {};
     if (user.plant?.id) {
       const plantAdmin = await this.usersRepo.findOne({
         where: {
           role: Role.PLANT_ADMIN,
-          plant: { id: user.plant.id } // This queries the jsonb column
+          plant: { id: user.plant.id }
         }
       });
 
@@ -178,33 +191,33 @@ export class CustomerService {
           installation: 'DUE'
         },
         breakdown: [
-          { 
+          {
             id: 'solarModules',
-            item: 'Solar Modules', 
+            item: 'Solar Modules',
             cost: approvedQuotation.costSolarModules,
             status: approvedQuotation.paymentStatus?.solarModules || 'DUE'
           },
-          { 
+          {
             id: 'inverters',
-            item: 'Inverters', 
+            item: 'Inverters',
             cost: approvedQuotation.costInverters,
             status: approvedQuotation.paymentStatus?.inverters || 'DUE'
           },
-          { 
+          {
             id: 'structure',
-            item: 'Structure & Hardware', 
+            item: 'Structure & Hardware',
             cost: approvedQuotation.costStructure,
             status: approvedQuotation.paymentStatus?.structure || 'DUE'
           },
-          { 
+          {
             id: 'bos',
-            item: 'Balance of System', 
+            item: 'Balance of System',
             cost: approvedQuotation.costBOS,
             status: approvedQuotation.paymentStatus?.bos || 'DUE'
           },
-          { 
+          {
             id: 'installation',
-            item: 'Installation', 
+            item: 'Installation',
             cost: approvedQuotation.costInstallation,
             status: approvedQuotation.paymentStatus?.installation || 'DUE'
           }
@@ -231,7 +244,7 @@ export class CustomerService {
     await this.usersRepo.update(customerId, {
       surveyStatus: 'ASSIGNED',
       assignedSurveyTeam: team.name,
-      teamName: team.name, // Redundant but keeping for consistency if used elsewhere
+      teamName: team.name,
     });
 
     // Log Audit

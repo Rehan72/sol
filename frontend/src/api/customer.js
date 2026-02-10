@@ -1,7 +1,8 @@
 import API from './client';
 
-export const getCustomerProfile = async () => {
-  const response = await API.get('/customer/profile');
+export const getCustomerProfile = async (customerId = null) => {
+  const url = customerId ? `/customer/${customerId}` : '/customer/profile';
+  const response = await API.get(url);
   return response.data;
 };
 

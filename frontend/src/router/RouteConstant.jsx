@@ -177,6 +177,11 @@ export default [
     exact: true
   },
   {
+    element: CommissioningHandoff,
+    path: `commissioning/handoff/:customerId`,
+    exact: true
+  },
+  {
     element: AuditTrail,
     path: `audit-trail`,
     exact: true

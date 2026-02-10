@@ -407,8 +407,8 @@ const SolarRequests = () => {
                                             </Button>
                                         )}
 
-                                    {/* Assign Team Button - shown when payment is received */}
-                                    {lead.status === 'Payment Received' &&
+                                    {/* Assign Team Button - shown when payment is received or installation started */}
+                                    {(lead.status === 'Payment Received' || lead.status === 'Installation Started') &&
                                         (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
                                             <Button
                                                 onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setModalType('assign_installation'); }}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -8,14 +8,16 @@ import {
     Calendar,
     AlertCircle,
     Hammer,
-    ClipboardList
+    ClipboardList,
+    Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import DateTimePicker from '../../components/ui/DateTimePicker';
-
 import InstallationReport from '../../components/reports/InstallationReport';
-// Mock Data for Commissioning Handoff
-const HANDOFF_DATA = {
+import { getWorkflow } from '../../api/workflow';
+import { getCustomerProfile } from '../../api/customer';
+// Mock Data for Commissioning Handoff (fallback)
+const MOCK_HANDOFF_DATA = {
     plantName: 'Sector 45 Residence',
     installationTerm: 'Installation Team Alpha',
     startDate: '2023-10-18',
@@ -32,15 +34,223 @@ const HANDOFF_DATA = {
 
 function CommissioningHandoff() {
     const navigate = useNavigate();
+    const { customerId } = useParams();
+    console.log(customerId);
+    const [loading, setLoading] = useState(true);
+    const [customerData, setCustomerData] = useState(null);
+    const [workflowSteps, setWorkflowSteps] = useState([]);
     const [commissioningDate, setCommissioningDate] = useState('');
     const [notes, setNotes] = useState('');
     const [gridSync, setGridSync] = useState(false);
+
+    // Fetch data on component mount
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+
+                // Fetch customer profile
+                const profile = customerId 
+                    ? await getCustomerProfile(customerId) 
+                    : null;
+
+                if (profile) {
+                    setCustomerData(profile);
+
+                    // Fetch workflow steps
+                    const steps = await getWorkflow(profile.id);
+                    if (steps && steps.length > 0) {
+                        setWorkflowSteps(steps);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch commissioning data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [customerId]);
+
+    // Transform workflow data for InstallationReport
+    const getInstallationReportData = () => {
+        if (!customerData) {
+            return {
+                customerDetails: {
+                    name: 'Amit Sharma',
+                    plantName: MOCK_HANDOFF_DATA.plantName,
+                    approvedCapacity: '10 kW',
+                    address: 'Plot 45, Sector 45, Gurugram, Haryana'
+                },
+                meta: {
+                    reportId: 'INST-2024-001',
+                    startDate: MOCK_HANDOFF_DATA.startDate,
+                    completionDate: MOCK_HANDOFF_DATA.completionDate,
+                    status: 'Completed'
+                },
+                team: {
+                    epcName: MOCK_HANDOFF_DATA.installationTerm,
+                    supervisor: 'Vikram Singh',
+                    teamSize: '4 Members',
+                    contact: '+91 98765 43210'
+                },
+                system: {
+                    modules: {
+                        brand: 'Longi Solar',
+                        capacity: '550 Wp',
+                        count: MOCK_HANDOFF_DATA.panelsInstalled,
+                        structure: 'High-Rise Ballasted',
+                        status: 'Installed'
+                    },
+                    inverters: {
+                        brand: 'Growatt',
+                        model: 'MID 10KTL3-X',
+                        type: 'String',
+                        count: 1,
+                        status: MOCK_HANDOFF_DATA.inverterInstalled ? 'Installed' : 'Pending'
+                    }
+                },
+                electrical: {
+                    dcCabling: 'Yes',
+                    acCabling: 'Yes',
+                    earthing: 'Yes',
+                    lightningArrestor: 'Yes'
+                },
+                checklist: [
+                    { task: 'Structure Installation', status: 'Done', date: '16 Oct', person: 'Team A' },
+                    { task: 'Module Mounting', status: 'Done', date: '17 Oct', person: 'Team A' },
+                    { task: 'DC Connections', status: 'Done', date: '18 Oct', person: 'Electrician' },
+                    { task: 'Inverter Installation', status: 'Done', date: '19 Oct', person: 'Electrician' },
+                    { task: 'Safety & Housekeeping', status: 'Done', date: '20 Oct', person: 'Supervisor' }
+                ],
+                quality: {
+                    mechanical: 'Yes',
+                    electrical: 'Yes',
+                    fireSafety: 'Yes',
+                    snagList: 'No'
+                },
+                attachments: {
+                    structurePhotos: 5,
+                    modulePhotos: 4,
+                    inverterPhotos: 2,
+                    earthingPhotos: 3
+                },
+                remarks: {
+                    issues: 'None',
+                    deviations: 'None',
+                    recommendations: 'Proceed to commissioning tests.'
+                },
+                handoff: {
+                    ready: 'Yes',
+                    pendingItems: 'None',
+                    date: '20 Oct 2023'
+                }
+            };
+        }
+
+        // Transform actual data from API
+        const installationSteps = workflowSteps.filter(s => s.phase === 'INSTALLATION');
+        
+        return {
+            customerDetails: {
+                name: customerData.name || 'N/A',
+                plantName: customerData.plantDetails?.name || 'Solar Plant',
+                approvedCapacity: customerData.plantDetails?.kw_capacity 
+                    ? `${customerData.plantDetails.kw_capacity} kW` 
+                    : 'N/A',
+                address: customerData.address || 'N/A'
+            },
+            meta: {
+                reportId: `INST-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+                startDate: customerData.createdAt 
+                    ? new Date(customerData.createdAt).toLocaleDateString() 
+                    : 'N/A',
+                completionDate: new Date().toLocaleDateString(),
+                status: customerData.installationStatus || 'Completed'
+            },
+            team: {
+                epcName: customerData.surveyTeam?.name || 'Unassigned',
+                supervisor: customerData.surveyTeam?.teamLead?.name || 'N/A',
+                teamSize: customerData.surveyTeam?.members?.length 
+                    ? `${customerData.surveyTeam.members.length} Members` 
+                    : 'N/A',
+                contact: customerData.surveyTeam?.teamLead?.phone || 'N/A'
+            },
+            system: {
+                modules: {
+                    brand: customerData.plantDetails?.moduleBrand || 'Longi Solar',
+                    capacity: customerData.plantDetails?.moduleCapacity 
+                        ? `${customerData.plantDetails.moduleCapacity} Wp` 
+                        : '550 Wp',
+                    count: customerData.plantDetails?.totalModules || MOCK_HANDOFF_DATA.panelsInstalled,
+                    structure: customerData.plantDetails?.structureType || 'High-Rise Ballasted',
+                    status: 'Installed'
+                },
+                inverters: {
+                    brand: customerData.plantDetails?.inverterBrand || 'Growatt',
+                    model: customerData.plantDetails?.inverterModel || 'MID 10KTL3-X',
+                    type: 'String',
+                    count: customerData.plantDetails?.inverterCount || 1,
+                    status: MOCK_HANDOFF_DATA.inverterInstalled ? 'Installed' : 'Pending'
+                }
+            },
+            electrical: {
+                dcCabling: 'Yes',
+                acCabling: 'Yes',
+                earthing: 'Yes',
+                lightningArrestor: 'Yes'
+            },
+            checklist: installationSteps.map(step => ({
+                task: step.label,
+                status: step.status === 'completed' ? 'Done' : 
+                       step.status === 'in_progress' ? 'In Progress' : 'Pending',
+                date: step.updatedAt 
+                    ? new Date(step.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) 
+                    : 'N/A',
+                person: step.assignedToId ? 'Team Member' : 'Unassigned'
+            })),
+            quality: {
+                mechanical: 'Yes',
+                electrical: 'Yes',
+                fireSafety: 'Yes',
+                snagList: 'No'
+            },
+            attachments: {
+                structurePhotos: 5,
+                modulePhotos: 4,
+                inverterPhotos: 2,
+                earthingPhotos: 3
+            },
+            remarks: {
+                issues: 'None',
+                deviations: 'None',
+                recommendations: 'Proceed to commissioning tests.'
+            },
+            handoff: {
+                ready: 'Yes',
+                pendingItems: 'None',
+                date: new Date().toLocaleDateString()
+            }
+        };
+    };
 
     const handleStartCommissioning = () => {
         // Logic to start commissioning
         console.log('Starting Commissioning...');
         navigate('/dashboard'); // Or commissioning dashboard
     };
+
+    if (loading) {
+        return (
+            <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 text-solar-yellow animate-spin" />
+                    <span className="text-white/60">Loading commissioning data...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
@@ -80,77 +290,7 @@ function CommissioningHandoff() {
 
                     {/* Left: Installation Summary & Checklist (differentiated from Survey Report) */}
                     <div className="lg:col-span-2 space-y-6">
-                        <InstallationReport data={{
-                            customerDetails: {
-                                name: 'Amit Sharma',
-                                plantName: HANDOFF_DATA.plantName,
-                                approvedCapacity: '10 kW',
-                                address: 'Plot 45, Sector 45, Gurugram, Haryana'
-                            },
-                            meta: {
-                                reportId: 'INST-2024-001',
-                                startDate: HANDOFF_DATA.startDate,
-                                completionDate: HANDOFF_DATA.completionDate,
-                                status: 'Completed'
-                            },
-                            team: {
-                                epcName: HANDOFF_DATA.installationTerm,
-                                supervisor: 'Vikram Singh',
-                                teamSize: '4 Members',
-                                contact: '+91 98765 43210'
-                            },
-                            system: {
-                                modules: {
-                                    brand: 'Longi Solar',
-                                    capacity: '550 Wp',
-                                    count: HANDOFF_DATA.panelsInstalled,
-                                    structure: 'High-Rise Ballasted',
-                                    status: 'Installed'
-                                },
-                                inverters: {
-                                    brand: 'Growatt',
-                                    model: 'MID 10KTL3-X',
-                                    type: 'String',
-                                    count: 1,
-                                    status: HANDOFF_DATA.inverterInstalled ? 'Installed' : 'Pending'
-                                }
-                            },
-                            electrical: {
-                                dcCabling: 'Yes',
-                                acCabling: 'Yes',
-                                earthing: 'Yes',
-                                lightningArrestor: 'Yes'
-                            },
-                            checklist: [
-                                { task: 'Structure Installation', status: 'Done', date: '16 Oct', person: 'Team A' },
-                                { task: 'Module Mounting', status: 'Done', date: '17 Oct', person: 'Team A' },
-                                { task: 'DC Connections', status: 'Done', date: '18 Oct', person: 'Electrician' },
-                                { task: 'Inverter Installation', status: 'Done', date: '19 Oct', person: 'Electrician' },
-                                { task: 'Safety & Housekeeping', status: 'Done', date: '20 Oct', person: 'Supervisor' },
-                            ],
-                            quality: {
-                                mechanical: 'Yes',
-                                electrical: 'Yes',
-                                fireSafety: 'Yes',
-                                snagList: 'No'
-                            },
-                            attachments: {
-                                structurePhotos: 5,
-                                modulePhotos: 4,
-                                inverterPhotos: 2,
-                                earthingPhotos: 3
-                            },
-                            remarks: {
-                                issues: 'None',
-                                deviations: 'None',
-                                recommendations: 'Proceed to commissioning tests.'
-                            },
-                            handoff: {
-                                ready: 'Yes',
-                                pendingItems: 'None',
-                                date: '20 Oct 2023'
-                            }
-                        }} />
+                        <InstallationReport data={getInstallationReportData()} />
                     </div>
 
                     {/* Right: Commissioning Action Panel */}

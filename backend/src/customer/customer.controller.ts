@@ -6,6 +6,7 @@ import {
   Req,
   UsePipes,
   Get,
+  Param,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
@@ -36,18 +37,25 @@ export class CustomerController {
     return this.customerService.getProfile(req.user.id);
   }
 
-  @Post('assign-survey')
-  @UseGuards(AccessTokenGuard, RolesGuard)
-  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
-  async assignSurvey(@Body() body: { customerId: string; teamId: string }, @Req() req: any) {
-    return this.customerService.assignSurveyTeam(body.customerId, body.teamId, req.user.id);
-  }
-
   @Get('solar-requests')
   @UseGuards(AccessTokenGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
   async getSolarRequests(@Req() req: any) {
     return this.customerService.getSolarRequests(req.user);
+  }
+
+  @Get(':id')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
+  async getCustomerById(@Param('id') id: string) {
+    return this.customerService.getCustomerById(id);
+  }
+
+  @Post('assign-survey')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.PLANT_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE)
+  async assignSurvey(@Body() body: { customerId: string; teamId: string }, @Req() req: any) {
+    return this.customerService.assignSurveyTeam(body.customerId, body.teamId, req.user.id);
   }
 
   @Get()

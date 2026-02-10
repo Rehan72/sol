@@ -48,4 +48,26 @@ export class WorkflowController {
     ) {
         return this.workflowService.advanceToPhase(customerId, body.phase, req.user.id);
     }
+
+    // Endpoint to mark installation as complete
+    @Post('complete/:customerId')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
+    async markInstallationComplete(
+        @Param('customerId') customerId: string,
+        @Req() req: any
+    ) {
+        return this.workflowService.markInstallationComplete(customerId, req.user.id);
+    }
+
+    // Endpoint to reset workflow (clear and reinitialize)
+    @Post('reset/:customerId')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN)
+    async resetWorkflow(
+        @Param('customerId') customerId: string,
+        @Req() req: any
+    ) {
+        return this.workflowService.resetWorkflow(customerId, req.user.id);
+    }
 }

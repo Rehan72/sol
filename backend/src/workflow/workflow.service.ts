@@ -26,19 +26,22 @@ export class WorkflowService {
             { phase: 'COMMISSIONING', stepId: 'grid_sync', label: 'Grid Synchronization' },
         ];
 
+        // Delete existing duplicate steps for this customer (cleanup)
+        const existingSteps = await this.stepRepo.find({ where: { customerId } });
+        if (existingSteps.length > 0) {
+            await this.stepRepo.remove(existingSteps);
+        }
+
         const steps = [];
         for (const step of defaultSteps) {
-            const existing = await this.stepRepo.findOne({ where: { customerId, stepId: step.stepId } });
-            if (!existing) {
-                const newStep = this.stepRepo.create({
-                    customerId,
-                    phase: step.phase,
-                    stepId: step.stepId,
-                    label: step.label,
-                    status: 'pending'
-                });
-                steps.push(await this.stepRepo.save(newStep));
-            }
+            const newStep = this.stepRepo.create({
+                customerId,
+                phase: step.phase,
+                stepId: step.stepId,
+                label: step.label,
+                status: 'pending'
+            });
+            steps.push(await this.stepRepo.save(newStep));
         }
 
         await this.auditService.log(adminId, 'CREATED', 'Workflow', customerId, 'INSTALLATION', { notes: 'Initialized installation workflow' });
@@ -49,13 +52,27 @@ export class WorkflowService {
         return this.stepRepo.find({ where: { customerId }, order: { createdAt: 'ASC' } });
     }
 
-    async updateStepStatus(stepId: string, status: string, userId: string, notes?: string) {
+    async resetWorkflow(customerId: string, adminId: string) {
+        // Delete all existing workflow steps for this customer
+        const existingSteps = await this.stepRepo.find({ where: { customerId } });
+        if (existingSteps.length > 0) {
+            await this.stepRepo.remove(existingSteps);
+        }
+        
+        // Reinitialize the workflow
+        return this.initializeWorkflow(customerId, adminId);
+    }
+
+    async updateStepStatus(stepId: string, status: string, userId: string, notes?: string, technicalData?: any) {
         const step = await this.stepRepo.findOne({ where: { id: stepId }, relations: ['customer'] });
         if (!step) throw new Error('Step not found');
 
         const oldStatus = step.status;
         step.status = status;
         if (notes) step.notes = notes;
+        if (technicalData) {
+            step.metadata = { ...step.metadata, technicalData };
+        }
         step.assignedToId = userId; // Track who did it
 
         const updated = await this.stepRepo.save(step);
@@ -67,7 +84,7 @@ export class WorkflowService {
             step.label,
             step.id,
             step.phase,
-            { oldValue: oldStatus, newValue: status, notes }
+            { oldValue: oldStatus, newValue: status, notes, ...(technicalData && { technicalData }) } as any
         );
 
         return updated;
@@ -110,7 +127,7 @@ export class WorkflowService {
             for (const step of defaultSteps) {
                 if (step.phase === nextPhase) {
                     const existing = await this.stepRepo.findOne({ 
-                        where: { customerId, stepId: step.stepId } 
+                        where: { customerId, stepId: step.stepId, phase: step.phase } 
                     });
                     if (!existing) {
                         const newStep = this.stepRepo.create({
@@ -156,5 +173,35 @@ export class WorkflowService {
         }
 
         return { success: true, message: `Advanced to ${nextPhase} phase` };
+    }
+
+    async markInstallationComplete(customerId: string, adminId: string) {
+        // Complete all INSTALLATION phase steps
+        const steps = await this.stepRepo.find({ where: { customerId } });
+        
+        for (const step of steps) {
+            if (step.phase === 'INSTALLATION' && step.status !== 'completed') {
+                step.status = 'completed';
+                await this.stepRepo.save(step);
+            }
+        }
+
+        // Update User Status to COMPLETED
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (user) {
+            user.installationStatus = 'COMPLETED';
+            await this.userRepo.save(user);
+        }
+
+        await this.auditService.log(
+            adminId,
+            'INSTALLATION_COMPLETED',
+            'Workflow',
+            customerId,
+            'INSTALLATION',
+            { notes: 'Installation marked as completed' }
+        );
+
+        return { success: true, message: 'Installation marked as completed' };
     }
 }
