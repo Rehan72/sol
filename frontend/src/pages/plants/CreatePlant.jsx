@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
-  Sun,
   MapPin,
   Zap,
   Calendar,
@@ -12,19 +11,12 @@ import {
   Phone,
   Mail,
   CheckCircle2,
-  Upload,
-  Info,
   AlertCircle,
-  Navigation,
   FileBadge,
   Activity,
   Gauge,
   Wifi,
   ShieldCheck,
-  Lock,
-  Database,
-  Server,
-  Layers,
   Cpu,
   ChevronRight,
   Globe,
@@ -343,7 +335,8 @@ function CreatePlant() {
     if (touched.location) setErrors(prev => ({ ...prev, location: '' }));
   };
 
-  const handleNext = () => {
+  const handleNext = (event) => {
+    event.preventDefault();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
     if (currentIndex < TABS.length - 1) {
       setActiveTab(TABS[currentIndex + 1].id);
