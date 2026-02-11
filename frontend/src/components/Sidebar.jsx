@@ -17,6 +17,7 @@ import {
   History,
   FileText,
   Wallet,
+  MessageSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -40,8 +41,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { name: 'WORKFLOW EXECUTION', icon: ClipboardCheck, path: '/installation-workflow', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'INSTALLATION_TEAM', 'EMPLOYEE'] },
     { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
+    { name: 'SERVICE TICKETS', icon: MessageSquare, path: '/admin/service', allowedRoles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },
     { name: 'PAYMENTS', icon: Wallet, path: '/customer/payments', allowedRoles: ['CUSTOMER'] },
+    { name: 'SERVICE TICKETS', icon: MessageSquare, path: '/customer/tickets', allowedRoles: ['CUSTOMER'] },
     { name: 'ONBOARDING', icon: ClipboardCheck, path: '/customer/setup', allowedRoles: ['CUSTOMER'] },
     { name: 'EMPLOYEES', icon: Users, path: '/employees', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'ANALYTICS', icon: Activity, path: '/analytics', allowedRoles: ['SUPER_ADMIN'] },

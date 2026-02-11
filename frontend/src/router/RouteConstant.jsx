@@ -39,6 +39,8 @@ import MaintenanceTeamDetail from "../pages/maintenanceTeam/MaintenanceTeamDetai
 import CreateSurvey from "../pages/surveys/CreateSurvey";
 import ViewQuotation from "../pages/quotations/ViewQuotation";
 import EmployeeDashboard from "../pages/employees/EmployeeDashboard";
+import CustomerTickets from "../pages/customer/CustomerTickets";
+import ServiceManagement from "../pages/admin/ServiceManagement";
 
 export const routeParams = "management";
 
@@ -279,6 +281,16 @@ export default [
   {
     element: EmployeeDashboard,
     path: `employee-dashboard`,
+    exact: true
+  },
+  {
+    element: CustomerTickets,
+    path: `customer/tickets`,
+    exact: true
+  },
+  {
+    element: ServiceManagement,
+    path: `admin/service`,
     exact: true
   }
 

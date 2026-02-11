@@ -14,6 +14,7 @@ import { WorkflowModule } from './workflow/workflow.module';
 import { SurveysModule } from './surveys/surveys.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { PaymentsModule } from './payments/payments.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
     imports: [
@@ -45,6 +46,7 @@ import { PaymentsModule } from './payments/payments.module';
         SurveysModule,
         QuotationsModule,
         PaymentsModule,
+        TicketsModule,
     ],
 })
 export class AppModule { }

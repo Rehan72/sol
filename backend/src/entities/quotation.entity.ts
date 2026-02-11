@@ -9,10 +9,10 @@ export class Quotation {
     @Column({ unique: true })
     quotationNumber: string;
 
-    @Column({ type: 'int' })
+    @Column({ type: 'int', nullable: true })
     surveyId: number;
 
-    @OneToOne(() => Survey)
+    @OneToOne(() => Survey, { nullable: true })
     @JoinColumn({ name: 'surveyId' })
     survey: Survey;
 
@@ -138,6 +138,9 @@ export class Quotation {
 
     @Column({ type: 'int', default: 1 })
     version: number;
+
+    @Column({ nullable: true })
+    ticketId: string;
 
     @CreateDateColumn()
     createdAt: Date;
