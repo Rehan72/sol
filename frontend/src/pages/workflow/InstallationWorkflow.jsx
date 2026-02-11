@@ -847,6 +847,85 @@ function InstallationWorkflow() {
                                             </Button>
                                         </div>
                                     </div>
+                                 )}
+
+                                {/* QC Report Modal */}
+                                {showQCReport && (
+                                    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowQCReport(false)} />
+                                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-3xl w-full max-w-2xl shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                                            <div className="flex justify-between items-start mb-8">
+                                                <div>
+                                                    <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+                                                        <FileText className="text-solar-yellow w-6 h-6" /> Installation <span className="text-solar-yellow">QC Report</span>
+                                                    </h2>
+                                                    <p className="text-white/40 text-sm mt-1">Submitted by {customerData?.assignedTeam?.name || 'Installation Team'}</p>
+                                                </div>
+                                                <Button variant="ghost" size="icon" onClick={() => setShowQCReport(false)} className="text-white/20 hover:text-white">
+                                                    <X />
+                                                </Button>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-6 mb-8">
+                                                <div className="glass p-4 rounded-2xl">
+                                                    <p className="text-white/30 text-[10px] uppercase font-bold tracking-widest mb-1">Total Capacity</p>
+                                                    <p className="text-lg font-black text-solar-yellow">{technicalData.capacity || 'Not specified'}</p>
+                                                </div>
+                                                <div className="glass p-4 rounded-2xl">
+                                                    <p className="text-white/30 text-[10px] uppercase font-bold tracking-widest mb-1">Panel Type</p>
+                                                    <p className="text-lg font-black text-white">{technicalData.panelType || 'Not specified'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-white/40 mb-4 flex items-center gap-2">
+                                                        <Zap className="w-3 h-3" /> Technical Specifications
+                                                    </h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                            <span className="text-white/60 text-sm">Structure Type</span>
+                                                            <span className="text-white font-bold text-sm uppercase">{technicalData.structureType || '-'}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                            <span className="text-white/60 text-sm">Earthing Done</span>
+                                                            <span className={`font-bold text-sm ${technicalData.earthingDone ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                {technicalData.earthingDone ? 'YES' : 'NO'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                            <span className="text-white/60 text-sm">LA Installed</span>
+                                                            <span className={`font-bold text-sm ${technicalData.laInstalled ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                {technicalData.laInstalled ? 'YES' : 'NO'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                                            <span className="text-white/60 text-sm">AC/DC Cables</span>
+                                                            <span className="text-white font-bold text-sm uppercase">{technicalData.cableType || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-white/40 mb-4">Equipment Details</h3>
+                                                    <div className="space-y-3">
+                                                        <p className="text-sm text-white/80 leading-relaxed italic border-l-2 border-solar-yellow pl-4">
+                                                            {technicalData.notes || 'No additional technical notes provided for this installation phase.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-10 pt-6 border-t border-white/10 flex justify-end gap-3">
+                                                <Button variant="ghost" onClick={() => setShowQCReport(false)}>Close Report</Button>
+                                                {customerData?.installationStatus === 'QC_PENDING' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'PLANT_ADMIN') && (
+                                                    <Button className="bg-emerald-500 text-white hover:bg-emerald-600 font-black px-8" onClick={() => { setShowQCReport(false); handleApproveQC(); }}>
+                                                        Approve Installation
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    </div>
                                 )}
 
                                 {/* Header Card */}
@@ -873,13 +952,23 @@ function InstallationWorkflow() {
                                                         <CheckCircle2 className="w-4 h-4 mr-2" />
                                                         {advancingPhase ? 'Completing...' : 'Proceed to Commissioning'}
                                                     </Button>
-                                                ) : customerData?.installationStatus === 'QC_PENDING' ? (
+                                                ) : ['QC_PENDING', 'QC_APPROVED', 'QC_REJECTED'].includes(customerData?.installationStatus) ? (
                                                     <div className="flex gap-2">
-                                                        <span className="px-3 py-2 bg-yellow-500/20 text-solar-yellow border border-solar-yellow/30 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center">
-                                                            <Clock className="w-4 h-4 mr-2" /> QC Pending
-                                                        </span>
+                                                        {customerData?.installationStatus === 'QC_PENDING' && (
+                                                            <span className="px-3 py-2 bg-yellow-500/20 text-solar-yellow border border-solar-yellow/30 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center">
+                                                                <Clock className="w-4 h-4 mr-2" /> QC Pending
+                                                            </span>
+                                                        )}
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="outline" 
+                                                            className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 uppercase tracking-wider text-xs font-bold"
+                                                            onClick={() => setShowQCReport(true)}
+                                                        >
+                                                            <FileText className="w-4 h-4 mr-2" /> View QC Report
+                                                        </Button>
                                                          {/* Admin/Employee Actions */}
-                                                        {(useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' ||  useAuthStore.getState()?.role === 'PLANT_ADMIN') && (
+                                                        {customerData?.installationStatus === 'QC_PENDING' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' ||  useAuthStore.getState()?.role === 'PLANT_ADMIN') && (
                                                             <>
                                                                 <Button size="sm" onClick={handleRejectQC} variant="destructive" className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/40">Reject</Button>
                                                                 <Button size="sm" onClick={handleApproveQC} className="bg-emerald-500 text-white hover:bg-emerald-600">Approve</Button>

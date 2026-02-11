@@ -52,7 +52,7 @@ export class WorkflowController {
     // Endpoint to mark installation as complete
     @Post('installation-complete')
     @UseGuards(AccessTokenGuard, RolesGuard)
-    @Roles(Role.INSTALLATION_TEAM, Role.SUPER_ADMIN, Role.REGION_ADMIN)
+    @Roles(Role.INSTALLATION_TEAM, Role.SUPER_ADMIN, Role.REGION_ADMIN, Role.PLANT_ADMIN, Role.EMPLOYEE)
     markInstallationComplete(@Body() body: { customerId: string }, @Req() req: any) {
         return this.workflowService.markInstallationComplete(body.customerId, req.user.id);
     }
