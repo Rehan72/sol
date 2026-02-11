@@ -99,7 +99,9 @@ const ServiceManagement = () => {
       <div className="relative z-10 p-6 md:p-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Service Management</h1>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-white leading-none">
+            Service <span className="text-solar-yellow italic">Management</span>
+          </h1>
           <p className="text-gray-400">Oversee maintenance operations and customer support tickets</p>
         </div>
         
