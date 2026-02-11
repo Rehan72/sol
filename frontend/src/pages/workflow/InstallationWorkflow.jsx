@@ -19,8 +19,9 @@ import {
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport
 import { useParams } from 'react-router-dom';
-import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase, markInstallationComplete, resetWorkflow } from '../../api/workflow';
+import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase, markInstallationComplete, resetWorkflow, requestQC, approveQC, rejectQC } from '../../api/workflow';
 import { getCustomerProfile } from '../../api/customer';
+import { useAuthStore } from '../../store/authStore';
 
 // --- Constants & Mock Data ---
 
@@ -76,6 +77,7 @@ const TimelineNode = ({ phase, isLast }) => {
 function InstallationWorkflow() {
     const navigate = useNavigate();
     const { customerId } = useParams();
+    const { user } = useAuthStore();
     const [activePhase, setActivePhase] = useState('survey');
     const [activeStepId, setActiveStepId] = useState('mounting');
     const [showTechnicalForm, setShowTechnicalForm] = useState(false);
@@ -83,6 +85,7 @@ function InstallationWorkflow() {
     const [customerData, setCustomerData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [advancingPhase, setAdvancingPhase] = useState(false);
+    const [showQCReport, setShowQCReport] = useState(false);
     
     // Technical form state
     const [technicalData, setTechnicalData] = useState({
@@ -203,7 +206,8 @@ function InstallationWorkflow() {
                             label: s.label,
                             status: s.status,
                             date: s.updatedAt,
-                            completedBy: s.assignedToId // we only have ID, ideally populate name
+                            completedBy: s.assignedToId, // we only have ID, ideally populate name
+                            technicalData: s.metadata?.technicalData
                         }));
                         
                         // Deduplicate steps by stepId (keep first occurrence)
@@ -304,7 +308,7 @@ function InstallationWorkflow() {
         if (!customerId) return;
         try {
             setAdvancingPhase(true);
-            await markInstallationComplete(customerId);
+            await markInstallationComplete(customerId); // backend uses context for adminId
             // Update local state to reflect completion
             setCustomerData(prev => ({ ...prev, installationStatus: 'INSTALLATION_COMPLETED' }));
             setActivePhase('commissioning');
@@ -314,6 +318,47 @@ function InstallationWorkflow() {
             console.error('Failed to mark installation as complete:', error);
         } finally {
             setAdvancingPhase(false);
+        }
+    };
+
+    const handleRequestQC = async () => {
+        try {
+            setLoading(true);
+            await requestQC(customerId); // Backend gets userId from JWT
+            setCustomerData(prev => ({ ...prev, installationStatus: 'QC_PENDING' }));
+            // toast.success("QC Requested");
+        } catch (error) {
+            console.error("Failed to request QC", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApproveQC = async () => {
+        try {
+            setLoading(true);
+            await approveQC(customerId);
+            setCustomerData(prev => ({ ...prev, installationStatus: 'QC_APPROVED' }));
+            // toast.success("QC Approved");
+        } catch (error) {
+            console.error("Failed to approve QC", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectQC = async () => {
+         const reason = prompt("Enter rejection reason:");
+         if(!reason) return;
+        try {
+            setLoading(true);
+            await rejectQC(customerId, reason);
+            setCustomerData(prev => ({ ...prev, installationStatus: 'QC_REJECTED' })); // or IN_PROGRESS
+             // toast.info("QC Rejected");
+        } catch (error) {
+            console.error("Failed to reject QC", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -819,22 +864,49 @@ function InstallationWorkflow() {
                                             </span>
                                         ) : (
                                             <>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
-                                                    onClick={() => setShowTechnicalForm(true)}
-                                                >
-                                                    <FileText className="w-4 h-4 mr-2" /> Update Technical Data
-                                                </Button>
-                                                <Button 
-                                                    onClick={handleMarkInstallationComplete} 
-                                                    disabled={advancingPhase}
-                                                    className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
-                                                >
-                                                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                                                    {advancingPhase ? 'Completing...' : 'Mark as Completed'}
-                                                </Button>
+                                                {customerData?.installationStatus === 'QC_APPROVED' ? (
+                                                     <Button 
+                                                        onClick={handleMarkInstallationComplete} 
+                                                        disabled={advancingPhase}
+                                                        className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                        {advancingPhase ? 'Completing...' : 'Proceed to Commissioning'}
+                                                    </Button>
+                                                ) : customerData?.installationStatus === 'QC_PENDING' ? (
+                                                    <div className="flex gap-2">
+                                                        <span className="px-3 py-2 bg-yellow-500/20 text-solar-yellow border border-solar-yellow/30 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center">
+                                                            <Clock className="w-4 h-4 mr-2" /> QC Pending
+                                                        </span>
+                                                         {/* Admin/Employee Actions */}
+                                                        {(useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' ||  useAuthStore.getState()?.role === 'PLANT_ADMIN') && (
+                                                            <>
+                                                                <Button size="sm" onClick={handleRejectQC} variant="destructive" className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/40">Reject</Button>
+                                                                <Button size="sm" onClick={handleApproveQC} className="bg-emerald-500 text-white hover:bg-emerald-600">Approve</Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="border-solar-yellow/30 text-solar-yellow hover:bg-solar-yellow/10 uppercase tracking-wider text-xs font-bold"
+                                                            onClick={() => setShowTechnicalForm(true)}
+                                                            disabled={customerData?.installationStatus === 'QC_PENDING'}
+                                                        >
+                                                            <FileText className="w-4 h-4 mr-2" /> Update Technical Data
+                                                        </Button>
+                                                        {/* Only Installation Team Requests QC */}
+                                                        <Button 
+                                                            onClick={handleRequestQC} 
+                                                            disabled={loading || steps.some(s => s.status !== 'completed')}
+                                                            className="bg-purple-600 text-white hover:bg-purple-700 font-bold"
+                                                        >
+                                                            {loading ? 'Requesting...' : 'Request QC'}
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </>
                                         )}
                                     </div>

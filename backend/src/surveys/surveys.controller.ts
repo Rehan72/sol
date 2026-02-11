@@ -35,4 +35,18 @@ export class SurveysController {
     completeSurvey(@Param('id') id: string) {
         return this.surveysService.completeSurvey(+id);
     }
+
+    @Post(':id/approve')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.REGION_ADMIN, Role.SUPER_ADMIN)
+    approveSurvey(@Param('id') id: string, @Body() body: any) { // body might contain adminId
+        return this.surveysService.approveSurvey(+id, body.adminId);
+    }
+
+    @Post(':id/reject')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.REGION_ADMIN, Role.SUPER_ADMIN)
+    rejectSurvey(@Param('id') id: string, @Body() body: any) {
+        return this.surveysService.rejectSurvey(+id, body.adminId, body.reason);
+    }
 }

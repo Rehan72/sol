@@ -146,7 +146,7 @@ export class Survey {
     recommendedSystemSize: number; // kW
 
     @Column({ default: 'DRAFT' })
-    status: string; // DRAFT / COMPLETED / APPROVED
+    status: string; // DRAFT / IN_PROGRESS / COMPLETED / APPROVED / REJECTED
 
     @CreateDateColumn()
     createdAt: Date;

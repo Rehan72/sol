@@ -21,11 +21,31 @@ export const advanceWorkflowPhase = async (customerId, nextPhase) => {
 };
 
 export const markInstallationComplete = async (customerId) => {
-    const response = await API.post(`/workflow/complete/${customerId}`);
+    const response = await API.post(`/workflow/installation-complete`, { customerId });
     return response.data;
 };
 
 export const resetWorkflow = async (customerId) => {
     const response = await API.post(`/workflow/reset/${customerId}`);
+    return response.data;
+};
+
+export const requestQC = async (customerId) => {
+    const response = await API.post(`/workflow/request-qc`, { customerId });
+    return response.data;
+};
+
+export const approveQC = async (customerId) => {
+    const response = await API.post(`/workflow/approve-qc`, { customerId });
+    return response.data;
+};
+
+export const rejectQC = async (customerId, reason) => {
+    const response = await API.post(`/workflow/reject-qc`, { customerId, reason });
+    return response.data;
+};
+
+export const assignInstallationTeam = async (customerId, teamId, adminId) => {
+    const response = await API.post(`/workflow/assign-team`, { customerId, teamId, adminId });
     return response.data;
 };

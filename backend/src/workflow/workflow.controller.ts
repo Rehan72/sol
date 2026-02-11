@@ -50,14 +50,39 @@ export class WorkflowController {
     }
 
     // Endpoint to mark installation as complete
-    @Post('complete/:customerId')
+    @Post('installation-complete')
     @UseGuards(AccessTokenGuard, RolesGuard)
-    @Roles(Role.SUPER_ADMIN, Role.PLANT_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE)
-    async markInstallationComplete(
-        @Param('customerId') customerId: string,
-        @Req() req: any
-    ) {
-        return this.workflowService.markInstallationComplete(customerId, req.user.id);
+    @Roles(Role.INSTALLATION_TEAM, Role.SUPER_ADMIN, Role.REGION_ADMIN)
+    markInstallationComplete(@Body() body: { customerId: string }, @Req() req: any) {
+        return this.workflowService.markInstallationComplete(body.customerId, req.user.id);
+    }
+
+    @Post('assign-team')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.REGION_ADMIN, Role.SUPER_ADMIN)
+    assignInstallationTeam(@Body() body: { customerId: string, teamId: string, adminId: string }) {
+        return this.workflowService.assignInstallationTeam(body.customerId, body.teamId, body.adminId);
+    }
+
+    @Post('request-qc')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.INSTALLATION_TEAM, Role.SUPER_ADMIN, Role.REGION_ADMIN, Role.EMPLOYEE, Role.PLANT_ADMIN)
+    requestInstallationQC(@Body() body: { customerId: string }, @Req() req: any) {
+        return this.workflowService.requestInstallationQC(body.customerId, req.user.id);
+    }
+
+    @Post('approve-qc')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.REGION_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE, Role.PLANT_ADMIN)
+    approveInstallationQC(@Body() body: { customerId: string }, @Req() req: any) {
+        return this.workflowService.approveInstallationQC(body.customerId, req.user.id);
+    }
+
+    @Post('reject-qc')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.REGION_ADMIN, Role.SUPER_ADMIN, Role.EMPLOYEE, Role.PLANT_ADMIN)
+    rejectInstallationQC(@Body() body: { customerId: string, reason: string }, @Req() req: any) {
+        return this.workflowService.rejectInstallationQC(body.customerId, req.user.id, body.reason);
     }
 
     // Endpoint to reset workflow (clear and reinitialize)

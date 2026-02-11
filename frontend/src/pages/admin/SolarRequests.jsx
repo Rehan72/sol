@@ -26,6 +26,8 @@ import { getSolarRequests, assignSurvey, assignInstallation, markInstallationRea
 import { getTeams } from '../../api/teams';
 import { approveQuotation, finalApproveQuotation } from '../../api/quotations';
 import { getPlantPayments } from '../../api/payments';
+import { approveSurvey, rejectSurvey } from '../../api/surveys';
+
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 
@@ -64,7 +66,10 @@ const SolarRequests = () => {
                 latestQuotationId: customer.latestQuotationId,
                 date: new Date(customer.createdAt).toLocaleDateString(),
                 // Mocking some fields for now as they might not exist in backend yet or need complex logic
-                feasibility: 'Pending'
+                feasibility: 'Pending',
+                surveyId: customer.surveys && customer.surveys.length > 0 ? customer.surveys[0].id : null, 
+                surveyStatus: customer.surveys && customer.surveys.length > 0 ? customer.surveys[0].status : null,
+                installationStatus: customer.installationStatus
             }));
             setLeads(mappedLeads);
         } catch (error) {
@@ -129,6 +134,9 @@ const SolarRequests = () => {
         // High Priority: Installation Workflow (Progress indicated by status)
         if (customer.installationStatus === 'INSTALLATION_SCHEDULED') return 'Installation Scheduled';
         if (customer.installationStatus === 'INSTALLATION_STARTED') return 'Installation Started';
+        if (customer.installationStatus === 'QC_PENDING') return 'QC Pending';
+        if (customer.installationStatus === 'QC_APPROVED') return 'QC Approved';
+        if (customer.installationStatus === 'QC_REJECTED') return 'QC Rejected';
         if (customer.installationStatus === 'INSTALLATION_READY') return 'Payment Received';
 
         // Quotation Workflow
@@ -137,10 +145,13 @@ const SolarRequests = () => {
         if (customer.latestQuotationStatus === 'PLANT_APPROVED') return 'Approved (Plant)';
         if (customer.latestQuotationStatus === 'SUBMITTED') return 'Quotation Submitted';
         if (customer.latestQuotationStatus === 'REJECTED') return 'Quotation Rejected';
-        if (customer.latestQuotationStatus === 'DRAFT') return 'Survey Completed';
+        if (customer.latestQuotationStatus === 'DRAFT') return 'Quotation Drafted';
 
         // Survey/Onboarding Workflow
         if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED') return 'Survey Completed';
+        if (customer.surveyStatus === 'APPROVED') return 'Survey Approved';
+        if (customer.surveyStatus === 'REJECTED') return 'Survey Rejected';
+        
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
 
@@ -173,7 +184,7 @@ const SolarRequests = () => {
             if (lead.latestQuotationId) {
                 navigate(`/quotations/${lead.latestQuotationId}`);
             }
-        } else if (lead.status === 'Payment Received' && !lead.assignedInstallationTeam) {
+        } else if ((lead.status === 'Payment Received' || lead.status === 'Installation Started')) {
             setModalType('assign_installation');
         }
     };
@@ -261,6 +272,41 @@ const SolarRequests = () => {
             addToast("Failed to assign installation team", 'error');
         }
     };
+
+
+    const handleApproveSurvey = async (lead) => {
+        if (!lead.surveyId) {
+             addToast("Survey ID not found", 'error');
+             return;
+        }
+        try {
+            await approveSurvey(lead.surveyId);
+            addToast("Survey Approved!", 'success');
+            fetchLeads();
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to approve survey", 'error');
+        }
+    };
+
+    const handleRejectSurvey = async (lead) => {
+        if (!lead.surveyId) {
+             addToast("Survey ID not found", 'error');
+             return;
+        }
+        const reason = prompt("Enter rejection reason:");
+        if (!reason) return;
+
+        try {
+            await rejectSurvey(lead.surveyId, reason);
+            addToast("Survey Rejected!", 'info');
+             fetchLeads();
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to reject survey", 'error');
+        }
+    };
+
 
     const handleMarkInstallationReady = async (lead) => {
         try {
@@ -352,7 +398,10 @@ const SolarRequests = () => {
                                                     lead.status.includes('Approved') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                                                         lead.status === 'Payment Received' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
                                                             lead.status === 'Installation Scheduled' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                                                                'bg-white/10 text-white/60'
+                                                                lead.status === 'QC Pending' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                                                                    lead.status === 'QC Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                                        lead.status === 'QC Rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                                                            'bg-white/10 text-white/60'
                                         }`}>
                                         {lead.status}
                                     </span>
@@ -370,24 +419,42 @@ const SolarRequests = () => {
                                         onClick={() => handleAction(lead)}
                                         className={`min-w-[140px] border border-white/10 text-white ${lead.status === 'New Request' ? 'bg-solar-yellow text-deep-navy hover:bg-gold font-bold border-none' :
                                             lead.status === 'Survey Completed' ? 'bg-indigo-600 hover:bg-indigo-700 font-bold border-none' :
+                                            ['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) ? 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-none' :
                                                 'bg-white/5 hover:bg-white/10'
                                             }`}
                                         disabled={false}
                                     >
                                         {lead.status === 'New Request' && <>Assign Survey <ArrowRight className="w-4 h-4 ml-2" /></>}
-                                        {lead.status === 'Survey Assigned' && (
-                                            <span onClick={(e) => { e.stopPropagation(); navigate('/installation-workflow'); }} className="flex items-center cursor-pointer">
+                                        {['Survey Assigned', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) && (
+                                            <span onClick={(e) => { e.stopPropagation(); navigate(`/installation-workflow/${lead.id}`); }} className="flex items-center cursor-pointer">
                                                 View Workflow <ArrowRight className="w-4 h-4 ml-2" />
                                             </span>
                                         )}
                                         {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> {lead.latestQuotationId ? 'Review Quote' : 'Create Quote'}</>}
                                         {lead.status === 'Quotation Submitted' && <><FileText className="w-4 h-4 mr-2" /> View Quote</>}
-                                        {lead.status.includes('Approved') && <><CheckCircle2 className="w-4 h-4 mr-2" /> Verified</>}
                                         {lead.status === 'Payment Received' && <><Users className="w-4 h-4 mr-2" /> Assign Team</>}
                                     </Button>
+                                    {/* Survey Approval Actions */}
+                                    {lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
+                                         <div className="flex gap-2">
+                                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleRejectSurvey(lead); }} className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/40">Reject</Button>
+                                            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleApproveSurvey(lead); }} className="bg-emerald-500 text-white hover:bg-emerald-600">Approve Survey</Button>
+                                         </div>
+                                    )}
+
+
+
+                                     {/* Create Quote - Only if Survey is Approved */}
+                                     {lead.status === 'Survey Approved' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
+                                          <Button onClick={() => handleAction(lead)} className="bg-indigo-600 hover:bg-indigo-700 font-bold border-none">
+                                             <Wallet className="w-4 h-4 mr-2" /> Create Quote
+                                          </Button>
+                                     )}
+
+
 
                                     {/* Mark Ready Button - shown when payment is made but installation not ready */}
-                                    {getPaymentStatus(lead.id) && lead.status !== 'Payment Received' && lead.status !== 'Installation Scheduled' &&
+                                    {getPaymentStatus(lead.id) && !['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) &&
                                         (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
                                             <Button
                                                 onClick={(e) => { e.stopPropagation(); handleMarkInstallationReady(lead); }}
@@ -399,17 +466,7 @@ const SolarRequests = () => {
                                             </Button>
                                         )}
 
-                                    {/* Assign Team Button - shown when payment is received or installation started */}
-                                    {(lead.status === 'Payment Received' || lead.status === 'Installation Started') &&
-                                        (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
-                                            <Button
-                                                onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setModalType('assign_installation'); }}
-                                                className="min-w-[140px] bg-blue-500 text-white font-bold hover:bg-blue-600 border-none"
-                                            >
-                                                <Users className="w-4 h-4 mr-2" />
-                                                Assign Team
-                                            </Button>
-                                        )}
+
 
                                     {/* Quick Approve Buttons for different stages/roles */}
                                     {lead.latestQuotationId && ((lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN')) ||

@@ -105,9 +105,28 @@ export class WorkflowService {
         // Complete all steps of the previous phases
         for (const step of currentSteps) {
             const stepPhaseIndex = phaseOrder.indexOf(step.phase);
-            if (stepPhaseIndex < currentPhaseIndex && step.status !== 'completed') {
+            if (stepPhaseIndex < currentPhaseIndex && step.status !== 'completed' && step.status !== 'qc_approved') {
+                 // Special handling for Installation phase completion which might be 'qc_approved'
                 step.status = 'completed';
                 await this.stepRepo.save(step);
+            }
+        }
+
+        // Strict Phase Transition Checks
+        if (nextPhase === 'INSTALLATION') {
+            const user = await this.userRepo.findOne({ where: { id: customerId } });
+            if (!user || user.surveyStatus !== 'APPROVED') {
+                throw new Error('Survey must be APPROVED before starting Installation.');
+            }
+        }
+
+        if (nextPhase === 'COMMISSIONING') {
+            const user = await this.userRepo.findOne({ where: { id: customerId } });
+             // Ensure Installation is QC_APPROVED. 
+             // We can check user status or check if all installation steps are done/approved.
+             // Since we track status on User entity too:
+            if (!user || user.installationStatus !== 'QC_APPROVED') {
+                throw new Error('Installation must be QC APPROVED before starting Commissioning.');
             }
         }
 
@@ -203,5 +222,89 @@ export class WorkflowService {
         );
 
         return { success: true, message: 'Installation marked as completed' };
+    }
+
+    async assignInstallationTeam(customerId: string, teamId: string, adminId: string) {
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (!user) throw new Error('User not found');
+        
+        user.assignedInstallationTeam = teamId;
+        user.installationStatus = 'TEAM_ASSIGNED';
+        await this.userRepo.save(user);
+
+         await this.auditService.log(
+            adminId,
+            'TEAM_ASSIGNED',
+            'Workflow',
+            customerId,
+            'INSTALLATION',
+            { notes: `Assigned Installation Team: ${teamId}` }
+        );
+        return user;
+    }
+
+    async requestInstallationQC(customerId: string, userId: string) {
+        // Check if all installation steps are completed
+        const steps = await this.stepRepo.find({ where: { customerId, phase: 'INSTALLATION' } });
+        const allStepsCompleted = steps.every(s => s.status === 'completed');
+        
+        if (!allStepsCompleted) {
+            throw new Error('All installation steps must be completed before requesting QC.');
+        }
+
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (user) {
+            user.installationStatus = 'QC_PENDING';
+            await this.userRepo.save(user);
+        }
+        
+         await this.auditService.log(
+            userId,
+            'QC_REQUESTED',
+            'Workflow',
+            customerId,
+            'INSTALLATION',
+            { notes: 'Installation QC Requested' }
+        );
+
+        return { success: true, message: 'QC Requested' };
+    }
+
+     async approveInstallationQC(customerId: string, adminId: string) {
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (user) {
+            user.installationStatus = 'QC_APPROVED';
+            await this.userRepo.save(user);
+        }
+        
+         await this.auditService.log(
+            adminId,
+            'QC_APPROVED',
+            'Workflow',
+            customerId,
+            'INSTALLATION',
+            { notes: 'Installation QC Approved' }
+        );
+
+        return { success: true, message: 'QC Approved' };
+    }
+
+    async rejectInstallationQC(customerId: string, adminId: string, reason: string) {
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (user) {
+            user.installationStatus = 'IN_PROGRESS'; // Revert to In Progress for fixes
+            await this.userRepo.save(user);
+        }
+
+         await this.auditService.log(
+            adminId,
+            'QC_REJECTED',
+            'Workflow',
+            customerId,
+            'INSTALLATION',
+            { notes: `Installation QC Rejected: ${reason}` }
+        );
+
+        return { success: true, message: 'QC Rejected' };
     }
 }

@@ -24,3 +24,13 @@ export const completeSurvey = async (id) => {
     const response = await client.post(`/surveys/${id}/complete`);
     return response.data;
 };
+
+export const approveSurvey = async (id) => {
+    const response = await client.post(`/surveys/${id}/approve`);
+    return response.data;
+};
+
+export const rejectSurvey = async (id, reason) => {
+    const response = await client.post(`/surveys/${id}/reject`, { reason });
+    return response.data;
+};
