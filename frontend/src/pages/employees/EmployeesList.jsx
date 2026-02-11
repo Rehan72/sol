@@ -231,14 +231,20 @@ function EmployeesList() {
                 >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                         <div>
-                            <motion.span
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-[2px] bg-solar-yellow rounded-full" />
+                                <span className="text-solar-yellow text-[10px] font-black uppercase tracking-[0.4em]">
+                                    Workforce Management
+                                </span>
+                            </div>
+                            {/* <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.2 }}
                                 className="text-solar-yellow font-black tracking-widest uppercase text-xs mb-4 block"
                             >
                                 Workforce Management
-                            </motion.span>
+                            </motion.span> */}
                             <h1 className="text-4xl md:text-6xl font-black uppercase rim-light tracking-tighter">
                                 Our <span className="text-solar-yellow">Employees</span>
                             </h1>
