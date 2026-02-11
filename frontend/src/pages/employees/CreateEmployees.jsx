@@ -106,25 +106,40 @@ function CreateEmployees() {
     };
 
     return (
-        <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
-            {/* Cinematic Overlays */}
+         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden flex flex-col">
+            {/* Background Effects */}
             <div className="film-grain" />
             <div className="cinematic-vignette" />
             <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
             <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-solar-yellow/5 blur-[150px] rounded-full pointer-events-none" />
 
-            <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <Button variant="ghost" onClick={() => navigate('/employees')} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent">
-                        <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-solar-yellow" />
+            <div className="relative z-10 px-6 md:px-12 py-8 mx-auto w-full pb-20">
+                {/* Premium Header Area */}
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12 border-b border-white/5 pb-8">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => navigate('/employees')}
+                                className="p-0 h-auto hover:bg-transparent group/back"
+                            >
+                                <div className="w-8 h-8 glass rounded-full flex items-center justify-center group-hover/back:bg-white/10 transition-colors border-white/10">
+                                    <ArrowLeft className="w-4 h-4 text-solar-yellow" />
+                                </div>
+                            </Button>
+                            <span className="text-solar-yellow text-[10px] font-black uppercase tracking-[0.4em]">
+                                Administration Control
+                            </span>
                         </div>
-                        <span className="text-sm text-solar-yellow font-bold uppercase tracking-widest">Back to List</span>
-                    </Button>
-                    <h1 className="text-2xl font-black uppercase rim-light tracking-tighter">
-                        {isEditMode ? 'Edit' : 'Create'} <span className="text-solar-yellow">Employee</span>
-                    </h1>
+                        <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">
+                            {isEditMode ? 'Edit' : 'Create'} <span className="text-solar-yellow italic">Employee</span>
+                        </h1>
+                    </div>
+
+                    <div className="glass px-6 py-3 h-auto rounded-xl text-[10px] font-black tracking-[0.3em] uppercase border border-white/10 text-white/40">
+                        <span className="text-white/40 mr-2">PROTOCOL:</span>
+                        <span>{isEditMode ? 'MODIFICATION' : 'REGISTRATION'} ACTIVE</span>
+                    </div>
                 </div>
 
                 <motion.form
@@ -132,9 +147,9 @@ function CreateEmployees() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                     onSubmit={handleSubmit(onSubmit)}
-                    className="glass rounded-3xl p-8 md:p-12 max-w-4xl mx-auto"
+                    className="glass rounded-3xl p-8 md:p-12 mx-auto"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <FormField name="name" label="Full Name" required errors={errors}>
                             <div className="relative">
                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
