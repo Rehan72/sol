@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkflowStep } from '../entities/workflow-step.entity';
 import { User } from '../entities/user.entity';
+import { Payment } from '../entities/payment.entity';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
@@ -12,6 +13,8 @@ export class WorkflowService {
         private stepRepo: Repository<WorkflowStep>,
         @InjectRepository(User)
         private userRepo: Repository<User>,
+        @InjectRepository(Payment)
+        private paymentRepo: Repository<Payment>,
         private auditService: AuditService
     ) { }
 
@@ -122,11 +125,30 @@ export class WorkflowService {
 
         if (nextPhase === 'COMMISSIONING') {
             const user = await this.userRepo.findOne({ where: { id: customerId } });
-             // Ensure Installation is QC_APPROVED. 
-             // We can check user status or check if all installation steps are done/approved.
-             // Since we track status on User entity too:
-            if (!user || user.installationStatus !== 'QC_APPROVED') {
-                throw new Error('Installation must be QC APPROVED before starting Commissioning.');
+             // Ensure Installation is QC_APPROVED or INSTALLATION_COMPLETED. 
+            if (!user || !['QC_APPROVED', 'INSTALLATION_COMPLETED'].includes(user.installationStatus)) {
+                throw new BadRequestException('Installation must be QC APPROVED before starting Commissioning.');
+            }
+        }
+
+        if (nextPhase === 'LIVE') {
+            // 1. Check if all commissioning steps are completed
+            const commissioningSteps = currentSteps.filter(s => s.phase === 'COMMISSIONING');
+            const allCommissioningDone = commissioningSteps.length > 0 && commissioningSteps.every(s => s.status === 'completed');
+            if (!allCommissioningDone) {
+                throw new BadRequestException('All commissioning steps must be completed before going live.');
+            }
+
+            // 2. Check if all 4 payment milestones are COMPLETED
+            const paidMilestones = await this.paymentRepo.find({
+                where: { customerId, status: 'COMPLETED' }
+            });
+            const milestoneIds = paidMilestones.map(p => p.milestoneId);
+            const requiredMilestones = ['M1', 'M2', 'M3', 'M4'];
+            const missingPayments = requiredMilestones.filter(m => !milestoneIds.includes(m));
+
+            if (missingPayments.length > 0) {
+                throw new BadRequestException(`Pending payments for milestones: ${missingPayments.join(', ')}. All payments must be cleared before going live.`);
             }
         }
 
@@ -183,6 +205,8 @@ export class WorkflowService {
                     user.surveyStatus = 'COMPLETED';
                     user.installationStatus = 'IN_PROGRESS';
                 } else if (nextPhase === 'COMMISSIONING') {
+                    user.installationStatus = 'COMMISSIONING';
+                } else if (nextPhase === 'LIVE') {
                     user.installationStatus = 'COMPLETED';
                 }
                 await this.userRepo.save(user);

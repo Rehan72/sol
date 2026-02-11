@@ -13,8 +13,10 @@ import {
     Camera,
     Zap,
     Hammer,
+    Activity,
     Lock,
     X,
+    Sun,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport
@@ -22,6 +24,7 @@ import { useParams } from 'react-router-dom';
 import { getWorkflow, initWorkflow, updateWorkflowStep, advanceWorkflowPhase, markInstallationComplete, resetWorkflow, requestQC, approveQC, rejectQC } from '../../api/workflow';
 import { getCustomerProfile } from '../../api/customer';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../hooks/useToast';
 
 // --- Constants & Mock Data ---
 
@@ -43,31 +46,82 @@ const TimelineNode = ({ phase, isLast }) => {
     const isLocked = phase.status === 'locked' || phase.status === 'pending';
 
     return (
-        <div className="flex items-start flex-1 last:flex-none">
+        <div className="flex items-start flex-1 last:flex-none group/node">
+            {/* Node and Label Container */}
             <div className="relative flex flex-col items-center group cursor-default">
+                {/* Glow Effect for Active/Completed */}
+                <AnimatePresence>
+                    {isActive && (
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1.5, opacity: 0.3 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                            className="absolute -inset-1 bg-solar-yellow blur-md rounded-full z-0"
+                        />
+                    )}
+                    {isCompleted && (
+                        <motion.div
+                            initial={{ scale: 1, opacity: 0 }}
+                            animate={{ scale: 1.2, opacity: 0.2 }}
+                            className="absolute -inset-1 bg-emerald-500 blur-sm rounded-full z-0"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Main Node Circle */}
                 <div className={`
-                    w-4 h-4 rounded-full border-2 z-10 transition-all duration-500
-                    ${isCompleted ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' :
-                        isActive ? 'bg-solar-yellow border-solar-yellow shadow-[0_0_15px_rgba(255,215,0,0.6)] scale-125' :
-                            'bg-deep-navy border-white/20'}
+                    w-6 h-6 rounded-full border-2 z-10 flex items-center justify-center transition-all duration-500
+                    ${isCompleted ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' :
+                        isActive ? 'bg-deep-navy border-solar-yellow text-solar-yellow scale-110 shadow-[0_0_20px_rgba(255,215,0,0.3)]' :
+                            'bg-white/5 border-white/10 text-white/20'}
                 `}>
-                    {isCompleted && <CheckCircle2 className="w-3 h-3 text-deep-navy absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
+                    {isCompleted ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                    ) : isActive ? (
+                        <Activity className="w-3.5 h-3.5 animate-pulse" />
+                    ) : (
+                        <Lock className="w-3 h-3" />
+                    )}
                 </div>
-                <div className="mt-2 w-max text-center">
-                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isActive ? 'text-solar-yellow' : isCompleted ? 'text-emerald-400' : 'text-white/30'}`}>
+
+                {/* Status Labels */}
+                <div className="mt-3 w-max text-center transition-all duration-300 group-hover/node:translate-y-[-2px]">
+                    <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1 ${
+                        isActive ? 'text-solar-yellow' : 
+                        isCompleted ? 'text-emerald-400' : 
+                        'text-white/20'
+                    }`}>
                         {phase.label}
                     </p>
-                    <p className="text-[9px] text-white/40">{phase.date}</p>
+                    <p className={`text-[8px] font-bold transition-colors ${
+                        isActive ? 'text-solar-yellow/80' :
+                        isCompleted ? 'text-emerald-400/80' :
+                        'text-white/20'
+                    }`}>
+                        {phase.date}
+                    </p>
                 </div>
             </div>
+
+            {/* Connecting Line */}
             {!isLast && (
-                <div className="flex-1 h-0.5 mx-2 mt-[7px] relative">
-                    <div className="absolute inset-0 bg-white/10" />
+                <div className="flex-1 h-[2px] mx-1 mt-[11px] relative">
+                    <div className="absolute inset-0 bg-white/5 rounded-full" />
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: isCompleted ? '100%' : '0%' }}
-                        className="absolute inset-0 bg-emerald-500/50"
+                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                        className="absolute inset-0 bg-linear-to-r from-emerald-500/40 via-emerald-500/60 to-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)] rounded-full"
                     />
+                    {isActive && (
+                        <motion.div
+                            initial={{ left: "-100%" }}
+                            animate={{ left: "100%" }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            className="absolute top-0 w-1/2 h-full bg-linear-to-r from-transparent via-solar-yellow/30 to-transparent"
+                        />
+                    )}
                 </div>
             )}
         </div>
@@ -86,7 +140,8 @@ function InstallationWorkflow() {
     const [loading, setLoading] = useState(true);
     const [advancingPhase, setAdvancingPhase] = useState(false);
     const [showQCReport, setShowQCReport] = useState(false);
-    
+    const { addToast } = useToast();
+    const role = useAuthStore(state => state.role);
     // Technical form state
     const [technicalData, setTechnicalData] = useState({
         pvModuleMake: '',
@@ -158,13 +213,16 @@ function InstallationWorkflow() {
                     console.log("profile", profile);
 
                     // Set active phase based on status - default to survey
-                    // Only move to installation if survey is completed and installation has started
                     let initialPhase = 'survey';
                     
-                    if (profile.surveyStatus === 'COMPLETED' && profile.installationStatus && profile.installationStatus !== 'PENDING') {
-                        initialPhase = 'installation';
-                    } else if (profile.installationStatus === 'INSTALLATION_COMPLETED') {
+                    if (profile.installationStatus === 'COMMISSIONING') {
                         initialPhase = 'commissioning';
+                    } else if (profile.installationStatus === 'COMPLETED') {
+                        initialPhase = 'live';
+                    } else if (profile.installationStatus && !['PENDING', 'ONBOARDED'].includes(profile.installationStatus)) {
+                         initialPhase = 'installation';
+                    } else if (profile.surveyStatus === 'COMPLETED') {
+                        initialPhase = 'installation';
                     }
                     
                     setActivePhase(initialPhase);
@@ -200,7 +258,7 @@ function InstallationWorkflow() {
                         // Note: Backend 'stepId' is what UI uses as 'id' for mapping.
                         // But UI also uses 'id' for state.
                         // Let's use backend stepId as the key identifier for UI logic.
-                        const mappedSteps = workflowSteps.filter(s => s.phase === 'INSTALLATION').map(s => ({
+                        const mappedSteps = workflowSteps.filter(s => s.phase === activePhase.toUpperCase()).map(s => ({
                             id: s.stepId, // critical mapping
                             dbId: s.id,   // actual DB ID for updates
                             label: s.label,
@@ -236,10 +294,9 @@ function InstallationWorkflow() {
             }
         };
         fetchData();
-    }, [customerId]);
+    }, [customerId, activePhase]); // Reload steps when phase changes
 
-    console.log(steps,'steps');
-    console.log(customerData,'customerData');
+ 
     
 
     const handleAdvancePhase = async (nextPhase) => {
@@ -255,11 +312,15 @@ function InstallationWorkflow() {
             } else if (nextPhase === 'commissioning') {
                 setActivePhase('commissioning');
                 setCustomerData(prev => ({ ...prev, installationStatus: 'INSTALLATION_COMPLETED' }));
-            } else if (nextPhase === 'live') {
+            } else if (nextPhase === 'live' || nextPhase === 'LIVE') {
                 setActivePhase('live');
+                setCustomerData(prev => ({ ...prev, installationStatus: 'COMPLETED' }));
+                addToast("Solar Plant is now LIVE!", "success");
             }
         } catch (error) {
             console.error('Failed to advance workflow phase:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to advance phase.';
+            addToast(errorMessage, "error");
         } finally {
             setAdvancingPhase(false);
         }
@@ -364,7 +425,7 @@ function InstallationWorkflow() {
 
     const currentStep = steps.find(s => s.id === activeStepId);
 
-    if (loading) return <div className="min-h-screen bg-deep-navy flex items-center justify-center text-white">Loading...</div>;
+
 
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden flex flex-col">
@@ -376,7 +437,7 @@ function InstallationWorkflow() {
 
             {/* --- Static Header --- */}
             <div className="relative z-10 max-w-7xl ">
-                <div>
+                <div className='ml-10'>
                     <Button variant="ghost" onClick={() => navigate(-1)} className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent">
                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
                             <ArrowLeft className="w-5 h-5 text-solar-yellow" />
@@ -395,13 +456,13 @@ function InstallationWorkflow() {
             </div>
 
             {/* --- Sticky Header / Timeline --- */}
-            <div className="sticky top-0 z-50 glass border-b border-white/5 backdrop-blur-xl bg-deep-navy/80">
+            <div className="sticky top-0 z-50 backdrop-blur-md ">
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
 
 
                         {/* Timeline */}
-                        <div className="flex-1 max-w-2xl px-4 md:px-12 flex items-start justify-between">
+                        <div className="flex-1 max-w-4xl px-4 md:px-12 flex items-start justify-between">
                             {PHASES.map((phase, index) => {
                                 let status = 'pending';
                                 let date = '-';
@@ -426,16 +487,24 @@ function InstallationWorkflow() {
                                         status = 'locked';
                                         date = 'Pending';
                                     }
-                                } else if (activePhase === 'commissioning' || activePhase === 'live') {
+                                } else if (activePhase === 'commissioning') {
                                     if (['survey', 'installation'].includes(phase.id)) {
                                         status = 'completed';
                                         date = 'Completed';
                                     } else if (phase.id === 'commissioning') {
-                                        status = 'in_progress';
-                                        date = 'In Progress';
+                                        status = customerData?.installationStatus === 'COMPLETED' ? 'completed' : 'in_progress';
+                                        date = customerData?.installationStatus === 'COMPLETED' ? 'Completed' : 'In Progress';
                                     } else {
                                         status = 'locked';
                                         date = 'Pending';
+                                    }
+                                } else if (activePhase === 'live') {
+                                    if (['survey', 'installation', 'commissioning'].includes(phase.id)) {
+                                        status = 'completed';
+                                        date = 'Completed';
+                                    } else if (phase.id === 'live') {
+                                        status = 'in_progress';
+                                        date = 'Monitoring Active';
                                     }
                                 }
 
@@ -445,11 +514,14 @@ function InstallationWorkflow() {
 
                         {/* Audit Link */}
                         <Button
-                            variant="ghost"
-                            className="text-white/40 hover:text-white text-xs uppercase tracking-wider hidden lg:flex items-center gap-2"
+                            variant="outline"
+                            className="bg-white/5 border-white/10 hover:border-solar-yellow/50 text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest hidden lg:flex items-center gap-3 px-5 py-2.5 rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,215,0,0.15)] group/btn"
                             onClick={() => navigate('/audit-trail')}
                         >
-                            <Clock className="w-4 h-4" /> View History
+                            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center group-hover/btn:bg-solar-yellow/20 transition-colors">
+                                <Clock className="w-3.5 h-3.5 text-solar-yellow translate-y-[0.5px]" />
+                            </div>
+                            View History
                         </Button>
                     </div>
                 </div>
@@ -472,13 +544,16 @@ function InstallationWorkflow() {
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-2">
-                                <div className={`p-2 rounded-lg ${activePhase === 'survey' ? 'bg-solar-yellow text-deep-navy' : 'bg-white/10 text-emerald-400'}`}>
+                                <div className={`p-2 rounded-lg ${activePhase === 'survey' ? 'bg-solar-yellow text-deep-navy' : (['COMPLETED', 'APPROVED'].includes(customerData?.surveyStatus) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40')}`}>
                                     <Map className="w-5 h-5" />
                                 </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${activePhase === 'survey'
-                                    ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30'
-                                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
-                                    {customerData?.surveyStatus === 'COMPLETED' ? 'Completed' : 'In Progress'}
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${
+                                    ['COMPLETED', 'APPROVED'].includes(customerData?.surveyStatus)
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                        : (customerData?.surveyStatus === 'ASSIGNED' || activePhase === 'survey') 
+                                            ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30 animate-pulse' 
+                                            : 'bg-white/10 text-white/40 border-white/10'}`}>
+                                    {['COMPLETED', 'APPROVED'].includes(customerData?.surveyStatus) ? 'Completed' : (customerData?.surveyStatus === 'ASSIGNED' || activePhase === 'survey' ? 'In Progress' : 'Pending')}
                                 </span>
                             </div>
                             <h4 className="font-bold text-lg">Survey</h4>
@@ -501,13 +576,16 @@ function InstallationWorkflow() {
                                 } ${activePhase === 'survey' ? 'opacity-50 pointer-events-none' : ''}`}
                         >
                             <div className="flex justify-between items-start mb-2">
-                                <div className={`p-2 rounded-lg ${activePhase === 'installation' ? 'bg-solar-yellow text-deep-navy' : 'bg-white/10 text-solar-yellow'}`}>
+                                <div className={`p-2 rounded-lg ${activePhase === 'installation' ? 'bg-solar-yellow text-deep-navy' : (['INSTALLATION_COMPLETED', 'QC_PENDING', 'QC_APPROVED', 'QC_REJECTED', 'COMMISSIONING', 'COMPLETED'].includes(customerData?.installationStatus) ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40')}`}>
                                     <Hammer className="w-5 h-5" />
                                 </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${activePhase === 'installation'
-                                    ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30 animate-pulse'
-                                    : activePhase === 'commissioning' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/10 text-white/40 border-white/10'}`}>
-                                    {customerData?.installationStatus === 'INSTALLATION_COMPLETED' ? 'Completed' : (activePhase === 'installation' ? 'In Progress' : (activePhase === 'commissioning' ? 'Completed' : 'Pending'))}
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${
+                                    ['INSTALLATION_COMPLETED', 'QC_PENDING', 'QC_APPROVED', 'QC_REJECTED', 'COMMISSIONING', 'COMPLETED'].includes(customerData?.installationStatus)
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                        : (['IN_PROGRESS', 'TEAM_ASSIGNED'].includes(customerData?.installationStatus) || activePhase === 'installation') 
+                                            ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30 animate-pulse' 
+                                            : 'bg-white/10 text-white/40 border-white/10'}`}>
+                                    {['INSTALLATION_COMPLETED', 'QC_PENDING', 'QC_APPROVED', 'QC_REJECTED', 'COMMISSIONING', 'COMPLETED'].includes(customerData?.installationStatus) ? 'Completed' : (['IN_PROGRESS', 'TEAM_ASSIGNED'].includes(customerData?.installationStatus) || activePhase === 'installation' ? 'In Progress' : 'Pending')}
                                 </span>
                             </div>
                             <h4 className="font-bold text-lg">Installation</h4>
@@ -519,24 +597,49 @@ function InstallationWorkflow() {
 
                         {/* Commissioning Phase Card */}
                         <div
-                            onClick={() => (activePhase === 'commissioning' || activePhase === 'live') ? setActivePhase('commissioning') : null}
-                            className={`p-5 rounded-2xl border transition-all relative overflow-hidden ${activePhase === 'commissioning'
-                                ? 'bg-white/10 border-solar-yellow'
-                                : 'bg-white/5 border-white/5 opacity-80'
-                                }`}
+                            onClick={() => (customerData?.installationStatus === 'COMMISSIONING' || customerData?.installationStatus === 'COMPLETED' || activePhase === 'commissioning') ? setActivePhase('commissioning') : null}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer group ${activePhase === 'commissioning'
+                                ? 'bg-white/10 border-solar-yellow/50 shadow-[0_0_20px_rgba(255,215,0,0.1)]'
+                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                } ${!['QC_APPROVED', 'INSTALLATION_COMPLETED', 'COMMISSIONING', 'COMPLETED'].includes(customerData?.installationStatus) ? 'opacity-50 pointer-events-none' : ''}`}
                         >
-                            {/* Lock Overlay if Installation not done (mocked as always locked for now unless clicked) */}
-                            {/* For demo, we allow clicking, but visually it looks lockedish */}
                             <div className="flex justify-between items-start mb-2">
-                                <div className={`p-2 rounded-lg ${activePhase === 'commissioning' ? 'bg-solar-yellow text-deep-navy' : 'bg-white/10 text-white/40'}`}>
+                                <div className={`p-2 rounded-lg ${activePhase === 'commissioning' ? 'bg-solar-yellow text-deep-navy' : (customerData?.installationStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40')}`}>
                                     <Zap className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/40 px-2 py-1 rounded-full border border-white/10 flex items-center gap-1">
-                                    <Lock className="w-3 h-3" /> Locked
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${
+                                    customerData?.installationStatus === 'COMPLETED' 
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                        : (customerData?.installationStatus === 'COMMISSIONING' || activePhase === 'commissioning') 
+                                            ? 'bg-solar-yellow/20 text-solar-yellow border-solar-yellow/30 animate-pulse' 
+                                            : 'bg-white/10 text-white/40 border-white/10'}`}>
+                                    {customerData?.installationStatus === 'COMPLETED' ? 'Completed' : (customerData?.installationStatus === 'COMMISSIONING' || activePhase === 'commissioning' ? 'In Progress' : 'Pending')}
                                 </span>
                             </div>
-                            <h4 className="font-bold text-lg text-white/60">Commissioning</h4>
-                            <p className="text-xs text-white/40 mt-1">Awaiting Installation</p>
+                            <h4 className="font-bold text-lg">Commissioning</h4>
+                            <p className="text-xs text-white/50 mt-1">Testing & Handoff</p>
+                        </div>
+
+                        {/* Live Phase Card */}
+                        <div
+                            onClick={() => (customerData?.installationStatus === 'COMPLETED' || activePhase === 'live') ? setActivePhase('live') : null}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer group ${activePhase === 'live'
+                                ? 'bg-white/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                } ${customerData?.installationStatus !== 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <div className={`p-2 rounded-lg ${activePhase === 'live' ? 'bg-emerald-500 text-deep-navy' : 'bg-white/10 text-emerald-400'}`}>
+                                    <Sun className="w-5 h-5" />
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${activePhase === 'live'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-pulse'
+                                    : customerData?.installationStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/10 text-white/40 border-white/10'}`}>
+                                    {customerData?.installationStatus === 'COMPLETED' ? 'Live' : 'Locked'}
+                                </span>
+                            </div>
+                            <h4 className="font-bold text-lg">Solar Live</h4>
+                            <p className="text-xs text-white/50 mt-1">Monitoring & Maintenance</p>
                         </div>
 
                     </div>
@@ -986,14 +1089,16 @@ function InstallationWorkflow() {
                                                         >
                                                             <FileText className="w-4 h-4 mr-2" /> Update Technical Data
                                                         </Button>
-                                                        {/* Only Installation Team Requests QC */}
-                                                        <Button 
-                                                            onClick={handleRequestQC} 
-                                                            disabled={loading || steps.some(s => s.status !== 'completed')}
-                                                            className="bg-purple-600 text-white hover:bg-purple-700 font-bold"
-                                                        >
-                                                            {loading ? 'Requesting...' : 'Request QC'}
-                                                        </Button>
+                                                        {/* Only Installation Team, Super Admin or Employee Requests QC */}
+                                                        {(useAuthStore.getState()?.role === 'INSTALLATION_TEAM' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
+                                                            <Button 
+                                                                onClick={handleRequestQC} 
+                                                                disabled={loading || steps.some(s => s.status !== 'completed')}
+                                                                className="bg-purple-600 text-white hover:bg-purple-700 font-bold"
+                                                            >
+                                                                {loading ? 'Requesting...' : 'Request QC'}
+                                                            </Button>
+                                                        )}
                                                     </>
                                                 )}
                                             </>
@@ -1014,20 +1119,21 @@ function InstallationWorkflow() {
                                             >
                                                 {/* Line */}
                                                 {index !== 0 && (
-                                                    <div className={`absolute top-5 right-[50%] w-full h-[2px] -translate-y-1/2 -z-10 ${step.status === 'completed' || step.status === 'in_progress' ? 'bg-solar-yellow' : 'bg-white/10'
-                                                        }`} />
+                                                    <div className={`absolute top-5 right-[50%] w-full h-[2px] -translate-y-1/2 -z-10 ${
+                                                        step.status === 'completed' ? 'bg-emerald-500' : (step.status === 'in_progress' ? 'bg-solar-yellow' : 'bg-white/10')
+                                                    }`} />
                                                 )}
 
                                                 {/* Icon */}
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all mb-3 ${activeStepId === step.id ? 'scale-110 shadow-[0_0_15px_rgba(255,215,0,0.5)]' : ''
-                                                    } ${step.status === 'completed' ? 'bg-solar-yellow border-solar-yellow text-deep-navy' :
+                                                {/* <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all mb-3 ${activeStepId === step.id ? 'scale-110 shadow-[0_0_15px_rgba(255,215,0,0.5)]' : ''
+                                                    } ${step.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-deep-navy' :
                                                         step.status === 'in_progress' ? 'bg-deep-navy border-solar-yellow text-solar-yellow' :
                                                             'bg-deep-navy border-white/20 text-white/20'
                                                     }`}>
                                                     {step.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> :
                                                         step.status === 'in_progress' ? <Zap className="w-5 h-5" /> :
                                                             <Circle className="w-5 h-5" />}
-                                                </div>
+                                                </div> */}
 
                                                 {/* Label */}
                                                 <span className={`text-xs font-bold uppercase tracking-wider text-center ${activeStepId === step.id ? 'text-white' : 'text-white/40'
@@ -1121,24 +1227,164 @@ function InstallationWorkflow() {
 
                         {/* --- COMMISSIONING VIEW --- */}
                         {activePhase === 'commissioning' && (
-                            <div className="glass rounded-3xl p-12 flex flex-col items-center justify-center text-center h-[500px] border-2 border-dashed border-white/10 animate-in zoom-in-95 duration-500">
-                                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                                    <Lock className="w-8 h-8 text-white/20" />
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500 relative">
+                                {/* Similar Header and Stepper as Installation, but for Commissioning */}
+                                <div className="glass rounded-2xl p-6 border-l-4 border-l-solar-yellow flex flex-col md:flex-row justify-between items-center gap-6">
+                                    <div>
+                                        <h2 className="text-xl font-black uppercase tracking-wide">Commissioning Phase</h2>
+                                        <p className={`${customerData?.installationStatus === 'COMPLETED' ? 'text-emerald-400' : 'text-solar-yellow'} font-bold uppercase text-xs tracking-widest mt-1`}>
+                                            Status: {customerData?.installationStatus === 'COMPLETED' ? 'Completed' : 'In Progress'}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        {customerData?.installationStatus === 'COMPLETED' ? (
+                                            <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 font-bold uppercase text-xs tracking-widest rounded-lg border border-emerald-500/30">
+                                                System Fully Live
+                                            </span>
+                                        ) : (
+                                            <div className="flex gap-4">
+                                                <span className="px-4 py-2 bg-solar-yellow/20 text-solar-yellow font-bold uppercase text-xs tracking-widest rounded-lg border border-solar-yellow/30 animate-pulse">
+                                                    Testing & Synchronization
+                                                </span>
+                                                {/* Go Live Button - Enabled when all commissioning steps are done */}
+                                                <Button 
+                                                    onClick={() => handleAdvancePhase('LIVE')}
+                                                    disabled={
+                                                        advancingPhase ||
+                                                        steps.some(s => s.status !== 'completed') ||
+                                                        role === "EMPLOYEE"
+                                                    }
+                                                    className="bg-emerald-500 text-white hover:bg-emerald-600 font-bold"
+                                                >
+                                                    <Zap className="w-4 h-4 mr-2" />
+                                                    {advancingPhase ? 'Processing...' : 'Go Live'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <h2 className="text-2xl font-black uppercase text-white/40 mb-2">Phase Locked</h2>
-                                <p className="text-white/30 max-w-sm mx-auto mb-8">
-                                    Complete the installation phase and submit the handoff report to unlock Commissioning.
-                                </p>
-                                <Button
-                                    variant="outline"
-                                    className="border-white/10 text-white/40 hover:text-white"
-                                    onClick={() => {
-                                        // Demo override
-                                        navigate('/commissioning/handoff');
-                                    }}
-                                >
-                                    Go to Handoff (Demo Override)
-                                </Button>
+
+                                {/* Horizontal Stepper */}
+                                <div className="glass rounded-2xl p-6 overflow-x-auto">
+                                    <div className="flex items-center justify-between min-w-[600px]">
+                                        {steps.map((step, index) => (
+                                            <div
+                                                key={step.id}
+                                                className="flex-1 flex flex-col items-center relative group cursor-pointer"
+                                                onClick={() => setActiveStepId(step.id)}
+                                            >
+                                                {/* Line */}
+                                                {index !== 0 && (
+                                                    <div className={`absolute top-5 right-[50%] w-full h-[2px] -translate-y-1/2 -z-10 ${
+                                                        step.status === 'completed' ? 'bg-emerald-500' : (step.status === 'in_progress' ? 'bg-solar-yellow' : 'bg-white/10')
+                                                    }`} />
+                                                )}
+
+                                                {/* Icon */}
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all mb-3 ${activeStepId === step.id ? 'scale-110 shadow-[0_0_15px_rgba(255,215,0,0.5)]' : ''
+                                                    } ${step.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-deep-navy' :
+                                                        step.status === 'in_progress' ? 'bg-deep-navy border-solar-yellow text-solar-yellow' :
+                                                            'bg-deep-navy border-white/20 text-white/20'
+                                                    }`}>
+                                                    {step.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> :
+                                                        step.status === 'in_progress' ? <Zap className="w-5 h-5" /> :
+                                                            <Circle className="w-5 h-5" />}
+                                                </div>
+
+                                                {/* Label */}
+                                                <span className={`text-xs font-bold uppercase tracking-wider text-center ${activeStepId === step.id ? 'text-white' : 'text-white/40'
+                                                    }`}>
+                                                    {step.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Active Step Detail for Commissioning */}
+                                <AnimatePresence mode='wait'>
+                                    <motion.div
+                                        key={activeStepId}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="glass rounded-3xl p-8 flex-1"
+                                    >
+                                        <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
+                                            <div>
+                                                <h3 className="text-2xl font-black uppercase">{currentStep?.label}</h3>
+                                                <p className="text-white/40 text-sm">Step 0{steps.findIndex(s => s.id === activeStepId) + 1} of {steps.length}</p>
+                                            </div>
+                                            <div className={`px-4 py-2 rounded-lg font-bold uppercase tracking-widest text-xs border ${currentStep?.status === 'in_progress' ? 'border-solar-yellow text-solar-yellow bg-solar-yellow/5' :
+                                                currentStep?.status === 'completed' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5' :
+                                                    'border-white/10 text-white/30'
+                                                }`}>
+                                                {currentStep?.status ? currentStep.status.replace('_', ' ') : 'Pending'}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-6">
+                                                <p className="text-white/60 leading-relaxed italic border-l-2 border-solar-yellow pl-4">
+                                                    Performing technical tests for {currentStep?.label}. Ensure grid stability and equipment response is within parameters.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-8 pt-6 border-t border-white/10 flex justify-end">
+                                            {currentStep?.status !== 'completed' && (
+                                                <Button className="bg-solar-yellow text-deep-navy hover:bg-gold font-bold" onClick={handleCompleteStep}>
+                                                    Mark as Completed
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                </AnimatePresence>
+                            </div>
+                        )}
+
+                        {/* --- LIVE MONITORING VIEW --- */}
+                        {activePhase === 'live' && (
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                                <div className="glass rounded-3xl p-8 border-t-4 border-t-emerald-500">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <h2 className="text-3xl font-black uppercase tracking-tight mb-2">System Live</h2>
+                                            <p className="text-emerald-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                Operational & Synchronized
+                                            </p>
+                                        </div>
+                                        <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                            <span className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest">Grid Connected</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                                        {[
+                                            { label: 'System Health', value: '100%', sub: 'All Nodes Active', icon: Activity },
+                                            { label: 'Current Output', value: '4.8 kW', sub: 'Peak Efficiency', icon: Zap },
+                                            { label: 'Grid Status', value: 'Synced', sub: 'Phase Balanced', icon: CheckCircle2 }
+                                        ].map((metric, i) => (
+                                            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                                                <metric.icon className="w-5 h-5 text-emerald-400 mb-4" />
+                                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{metric.label}</p>
+                                                <p className="text-2xl font-black text-white uppercase">{metric.value}</p>
+                                                <p className="text-[9px] text-white/20 uppercase font-bold mt-1 tracking-wider">{metric.sub}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-8 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <Sun className="w-24 h-24 text-emerald-500" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h4 className="text-white font-bold uppercase tracking-tight mb-2">Solar Activation Successful</h4>
+                                            <p className="text-white/40 text-sm leading-relaxed max-w-lg italic">
+                                                Your solar plant is now feeding clean energy into the grid. Technical commissioning is archived, and real-time monitoring is active.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 

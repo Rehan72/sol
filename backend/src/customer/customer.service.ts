@@ -326,6 +326,10 @@ export class CustomerService {
         u.name AS user_name,
         u.email AS user_email,
         u.phone AS user_phone,
+        u.city AS user_city,
+        u.state AS user_state,
+        u.country AS user_country,
+        u.pincode AS user_pincode,
         u."installationStatus" AS "user_installationStatus",
         u."surveyStatus" AS "user_surveyStatus",
         q.status AS "latestQuotationStatus"
@@ -355,6 +359,10 @@ export class CustomerService {
       name: item.user_name,
       email: item.user_email,
       phone: item.user_phone,
+      city: item.user_city,
+      state: item.user_state,
+      country: item.user_country,
+      pincode: item.user_pincode,
       installationStatus: item.user_installationStatus,
       surveyStatus: item.user_surveyStatus,
       latestQuotationStatus: item.latestQuotationStatus

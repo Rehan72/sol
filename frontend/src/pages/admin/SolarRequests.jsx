@@ -137,6 +137,8 @@ const SolarRequests = () => {
         if (customer.installationStatus === 'QC_PENDING') return 'QC Pending';
         if (customer.installationStatus === 'QC_APPROVED') return 'QC Approved';
         if (customer.installationStatus === 'QC_REJECTED') return 'QC Rejected';
+        if (customer.installationStatus === 'COMMISSIONING') return 'Commissioning';
+        if (customer.installationStatus === 'COMPLETED') return 'Live';
         if (customer.installationStatus === 'INSTALLATION_READY') return 'Payment Received';
 
         // Quotation Workflow
@@ -186,6 +188,8 @@ const SolarRequests = () => {
             }
         } else if ((lead.status === 'Payment Received' || lead.status === 'Installation Started')) {
             setModalType('assign_installation');
+        } else if (['Survey Assigned', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING', 'Live'].includes(lead.status)) {
+            navigate(`/installation-workflow/${lead.id}`);
         }
     };
 
@@ -401,6 +405,7 @@ const SolarRequests = () => {
                                                                 lead.status === 'QC Pending' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
                                                                     lead.status === 'QC Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                                                                         lead.status === 'QC Rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                                                        ['Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
                                                                             'bg-white/10 text-white/60'
                                         }`}>
                                         {lead.status}
@@ -419,15 +424,15 @@ const SolarRequests = () => {
                                         onClick={() => handleAction(lead)}
                                         className={`min-w-[140px] border border-white/10 text-white ${lead.status === 'New Request' ? 'bg-solar-yellow text-deep-navy hover:bg-gold font-bold border-none' :
                                             lead.status === 'Survey Completed' ? 'bg-indigo-600 hover:bg-indigo-700 font-bold border-none' :
-                                            ['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) ? 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-none' :
+                                            ['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-none' :
                                                 'bg-white/5 hover:bg-white/10'
                                             }`}
                                         disabled={false}
                                     >
                                         {lead.status === 'New Request' && <>Assign Survey <ArrowRight className="w-4 h-4 ml-2" /></>}
-                                        {['Survey Assigned', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) && (
-                                            <span onClick={(e) => { e.stopPropagation(); navigate(`/installation-workflow/${lead.id}`); }} className="flex items-center cursor-pointer">
-                                                View Workflow <ArrowRight className="w-4 h-4 ml-2" />
+                                        {['Survey Assigned', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING', 'Live'].includes(lead.status) && (
+                                            <span className="flex items-center">
+                                                {lead.status === 'Live' ? 'View Live' : (lead.status === 'Commissioning' || lead.status === 'COMMISSIONING' ? 'View Commissioning' : 'View Workflow')} <ArrowRight className="w-4 h-4 ml-2" />
                                             </span>
                                         )}
                                         {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> {lead.latestQuotationId ? 'Review Quote' : 'Create Quote'}</>}
@@ -454,7 +459,7 @@ const SolarRequests = () => {
 
 
                                     {/* Mark Ready Button - shown when payment is made but installation not ready */}
-                                    {getPaymentStatus(lead.id) && !['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed'].includes(lead.status) &&
+                                    {getPaymentStatus(lead.id) && !['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING', 'Live'].includes(lead.status) &&
                                         (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
                                             <Button
                                                 onClick={(e) => { e.stopPropagation(); handleMarkInstallationReady(lead); }}
@@ -492,9 +497,9 @@ const SolarRequests = () => {
                 {/* MODALS */}
                 <AnimatePresence>
                     {modalType === 'create_lead' && (
-                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="fixed inset-0 z-100 flex items-start justify-center p-4 overflow-y-auto py-12">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={closeModal} />
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Plus className="w-6 h-6 text-solar-yellow" /> Create Solar Request
                                 </h2>
@@ -555,9 +560,9 @@ const SolarRequests = () => {
                     )}
 
                     {modalType === 'assign_survey' && (
-                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="fixed inset-0 z-100 flex items-start justify-center p-4 overflow-y-auto py-12">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={closeModal} />
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Clipboard className="w-5 h-5 text-solar-yellow" /> Assign Survey Team
                                 </h2>
@@ -600,9 +605,9 @@ const SolarRequests = () => {
                     )}
 
                     {modalType === 'create_quote' && (
-                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-2xl shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="fixed inset-0 z-100 flex items-start justify-center p-4 overflow-y-auto py-12">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={closeModal} />
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-2xl shadow-2xl z-10">
                                 <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
                                     <Wallet className="w-5 h-5 text-emerald-400" /> Create Quotation
                                 </h2>
@@ -652,52 +657,103 @@ const SolarRequests = () => {
                     )}
 
                     {modalType === 'assign_installation' && (
-                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-deep-navy border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                                <h2 className="text-xl font-black uppercase mb-6 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-blue-400" /> Assign Installation Team
-                                </h2>
-
-                                <div className="space-y-4 mb-6">
-                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex justify-between items-center">
+                        <div className="fixed inset-0 z-100 flex items-start justify-center p-4 overflow-y-auto py-12">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={closeModal} />
+                            <motion.div 
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+                                animate={{ scale: 1, opacity: 1, y: 0 }} 
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }} 
+                                className="relative bg-deep-navy/90 md:bg-deep-navy/40 backdrop-blur-2xl border border-white/10 p-10 md:p-12 rounded-[2.5rem] w-full max-w-xl shadow-[0_0_80px_rgba(0,0,0,0.6)] z-10 group/modal"
+                            >
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 blur-[80px] rounded-full -mr-20 -mt-20 group-hover/modal:bg-blue-500/10 transition-all duration-700" />
+                                
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-10">
+                                        <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                            <Users className="w-7 h-7 text-blue-400" />
+                                        </div>
                                         <div>
-                                            <p className="text-emerald-400 font-bold text-sm">Payment Received!</p>
-                                            <p className="text-white/60 text-xs">₹{getPaymentStatus(selectedLead?.id)?.amount?.toLocaleString()}</p>
-                                        </div>
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold uppercase text-white/40 mb-2 block">Customer</label>
-                                        <div className="p-3 bg-white/5 rounded-lg text-white font-bold">{selectedLead?.name}</div>
-                                    </div>
-                                    <div>
-                                        <div className="relative">
-                                            <Select
-                                                name="installationTeamSelect"
-                                                label="Select Installation Team"
-                                                value={selectedInstallationTeamId}
-                                                onChange={(e) => setSelectedInstallationTeamId(e.target.value)}
-                                                options={installationTeams}
-                                                icon={Users}
-                                                placeholder="Select a team..."
-                                            />
+                                            <h2 className="text-3xl font-black uppercase tracking-tighter text-white">
+                                                Assign <span className="text-blue-400 italic">Installation</span>
+                                            </h2>
+                                            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Operational Readiness Protocol</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold uppercase text-white/40 mb-2 block">Scheduled Start Date</label>
-                                        <DateTimePicker
-                                            mode="single"
-                                            placeholder="Select Date"
-                                            value={surveyDate}
-                                            onChange={setSurveyDate}
-                                        />
-                                    </div>
-                                </div>
 
-                                <div className="flex gap-4">
-                                    <Button variant="ghost" onClick={closeModal} className="flex-1 text-white/50">Cancel</Button>
-                                    <Button onClick={handleAssignInstallation} className="flex-1 bg-blue-500 text-white font-bold hover:bg-blue-600">Assign Team</Button>
+                                    <div className="space-y-8 mb-10">
+                                        {/* Status Header */}
+                                        <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-3xl flex justify-between items-center group/status hover:bg-emerald-500/10 transition-all duration-500">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    <p className="text-emerald-400 font-black uppercase tracking-widest text-[10px]">Financial Clearance</p>
+                                                </div>
+                                                <p className="text-2xl font-black text-white px-3.5 italic tracking-tighter mt-1.5">₹{getPaymentStatus(selectedLead?.id)?.amount?.toLocaleString()}</p>
+                                            </div>
+                                            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                                            </div>
+                                        </div>
+
+                                        {/* Information Grid */}
+                                        <div className="grid grid-cols-1 gap-6">
+                                            <div className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:bg-white/10 transition-colors">
+                                                <label className="text-[9px] font-black uppercase text-white/20 mb-3 block tracking-widest">Designated Customer</label>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-[0.75rem] bg-white/5 flex items-center justify-center border border-white/5 font-black text-white/40">
+                                                        {selectedLead?.name?.charAt(0)}
+                                                    </div>
+                                                    <div className="text-xl font-black text-white tracking-tight uppercase">{selectedLead?.name}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <label className="text-[9px] font-black uppercase text-white/20 mb-3 block tracking-widest">Select Strike Team</label>
+                                                    <div className="relative group/select">
+                                                        <Select
+                                                            name="installationTeamSelect"
+                                                            value={selectedInstallationTeamId}
+                                                            onChange={(e) => setSelectedInstallationTeamId(e.target.value)}
+                                                            options={installationTeams}
+                                                            icon={Users}
+                                                            placeholder="Select Operation Unit..."
+                                                            className="bg-white/5 border-white/10 h-14"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[9px] font-black uppercase text-white/20 mb-3 block tracking-widest">Deployment Schedule</label>
+                                                    <div className="relative group/date">
+                                                        <DateTimePicker
+                                                            mode="single"
+                                                            placeholder="Select Start Date"
+                                                            value={surveyDate}
+                                                            onChange={setSurveyDate}
+                                                            className="bg-white/5 border-white/10 h-14"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <Button 
+                                            variant="ghost" 
+                                            onClick={closeModal} 
+                                            className="flex-1 py-7 rounded-2xl text-white/30 hover:text-white uppercase font-black tracking-[0.2em] text-[10px] border border-transparent hover:border-white/5 transition-all"
+                                        >
+                                            Abort Protocol
+                                        </Button>
+                                        <Button 
+                                            onClick={handleAssignInstallation} 
+                                            className="flex-1 bg-linear-to-r from-blue-500 to-blue-600 text-white font-black py-7 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-[10px] shadow-[0_15px_30px_rgba(59,130,246,0.3)]"
+                                        >
+                                            Authorize Mission <ArrowRight className="w-4 h-4 ml-2" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </motion.div>
                         </div>

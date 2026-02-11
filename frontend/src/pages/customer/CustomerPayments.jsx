@@ -104,22 +104,32 @@ const CustomerPayments = () => {
         const isM2Paid = paidMilestones.includes('M2');
         const isM3Paid = paidMilestones.includes('M3');
 
-        const isM2Unlocked = isM1Paid && (
-            installationStatus === 'INSTALLATION_READY' ||
-            installationStatus === 'INSTALLATION_SCHEDULED' ||
-            installationStatus === 'INSTALLATION_STARTED'
-        );
+        const isM2Unlocked = isM1Paid && [
+            'INSTALLATION_READY',
+            'INSTALLATION_SCHEDULED',
+            'INSTALLATION_STARTED',
+            'INSTALLATION_COMPLETED',
+            'QC_PENDING',
+            'QC_APPROVED',
+            'QC_REJECTED',
+            'COMMISSIONING',
+            'COMPLETED'
+        ].includes(installationStatus);
 
-        const isM3Unlocked = isM2Paid && (
-            installationStatus === 'INSTALLATION_COMPLETED' ||
-            installationStatus === 'COMMISSIONING' ||
-            installationStatus === 'COMPLETED'
-        );
+        const isM3Unlocked = isM2Paid && [
+            'INSTALLATION_COMPLETED',
+            'QC_PENDING',
+            'QC_APPROVED',
+            'QC_REJECTED',
+            'COMMISSIONING',
+            'COMPLETED'
+        ].includes(installationStatus);
 
-        const isM4Unlocked = isM3Paid && (
-            installationStatus === 'COMMISSIONING' ||
-            installationStatus === 'COMPLETED'
-        );
+        const isM4Unlocked = isM3Paid && [
+            'QC_APPROVED',
+            'COMMISSIONING',
+            'COMPLETED'
+        ].includes(installationStatus);
 
         const dynamicMilestones = [
             {
@@ -276,7 +286,7 @@ const CustomerPayments = () => {
                         className="lg:col-span-1 space-y-6"
                     >
                         {/* Summary Card */}
-                        <div className="glass rounded-3xl p-6 border border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
+                        <div className="glass rounded-3xl p-6 border border-white/5 bg-linear-to-br from-white/5 to-transparent relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-32 bg-solar-yellow/5 rounded-full blur-[80px]" />
 
                             <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-6">Payment Overview</h2>
@@ -311,7 +321,7 @@ const CustomerPayments = () => {
                                             initial={{ width: 0 }}
                                             animate={{ width: `${progress}%` }}
                                             transition={{ duration: 1, delay: 0.5 }}
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-solar-yellow"
+                                            className="h-full bg-linear-to-r from-emerald-500 to-solar-yellow"
                                         />
                                     </div>
                                 </div>
@@ -421,7 +431,7 @@ const CustomerPayments = () => {
                             className="relative bg-deep-navy border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl overflow-hidden"
                         >
                             {/* Modal Background */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 bg-linear-to-b from-white/5 to-transparent pointer-events-none" />
 
                             <div className="relative z-10">
                                 <h2 className="text-2xl font-bold text-white mb-2">Make Payment</h2>

@@ -431,7 +431,7 @@ const CustomerOnboarding = () => {
             <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-solar-yellow/5 blur-[150px] rounded-full pointer-events-none" />
 
             {/* Content */}
-            <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8 max-w-5xl">
+            <div className="relative z-10 px-6 md:px-12 mx-auto pb-20 pt-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-2xl font-black uppercase rim-light tracking-tighter">

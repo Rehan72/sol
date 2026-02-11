@@ -14,8 +14,9 @@ import {
 import { Button } from '../../components/ui/button';
 import DateTimePicker from '../../components/ui/DateTimePicker';
 import InstallationReport from '../../components/reports/InstallationReport';
-import { getWorkflow } from '../../api/workflow';
+import { getWorkflow, advanceWorkflowPhase } from '../../api/workflow';
 import { getCustomerProfile } from '../../api/customer';
+import { useToast } from '../../hooks/useToast';
 // Mock Data for Commissioning Handoff (fallback)
 const MOCK_HANDOFF_DATA = {
     plantName: 'Sector 45 Residence',
@@ -42,6 +43,8 @@ function CommissioningHandoff() {
     const [commissioningDate, setCommissioningDate] = useState('');
     const [notes, setNotes] = useState('');
     const [gridSync, setGridSync] = useState(false);
+    const [techData, setTechData] = useState(null);
+    const { addToast } = useToast();
 
     // Fetch data on component mount
     useEffect(() => {
@@ -61,6 +64,11 @@ function CommissioningHandoff() {
                     const steps = await getWorkflow(profile.id);
                     if (steps && steps.length > 0) {
                         setWorkflowSteps(steps);
+                        // Find step with technical data
+                        const techStep = steps.find(s => s.metadata?.technicalData);
+                        if (techStep) {
+                            setTechData(techStep.metadata.technicalData);
+                        }
                     }
                 }
             } catch (error) {
@@ -179,12 +187,12 @@ function CommissioningHandoff() {
             },
             system: {
                 modules: {
-                    brand: customerData.plantDetails?.moduleBrand || 'Longi Solar',
-                    capacity: customerData.plantDetails?.moduleCapacity 
+                    brand: techData?.panelType || customerData.plantDetails?.moduleBrand || 'Longi Solar',
+                    capacity: techData?.capacity || (customerData.plantDetails?.moduleCapacity 
                         ? `${customerData.plantDetails.moduleCapacity} Wp` 
-                        : '550 Wp',
+                        : '550 Wp'),
                     count: customerData.plantDetails?.totalModules || MOCK_HANDOFF_DATA.panelsInstalled,
-                    structure: customerData.plantDetails?.structureType || 'High-Rise Ballasted',
+                    structure: techData?.structureType || customerData.plantDetails?.structureType || 'High-Rise Ballasted',
                     status: 'Installed'
                 },
                 inverters: {
@@ -196,10 +204,10 @@ function CommissioningHandoff() {
                 }
             },
             electrical: {
-                dcCabling: 'Yes',
-                acCabling: 'Yes',
-                earthing: 'Yes',
-                lightningArrestor: 'Yes'
+                dcCabling: techData?.cableType ? 'Yes' : 'No',
+                acCabling: techData?.cableType ? 'Yes' : 'No',
+                earthing: techData?.earthingDone ? 'Yes' : 'No',
+                lightningArrestor: techData?.laInstalled ? 'Yes' : 'No'
             },
             checklist: installationSteps.map(step => ({
                 task: step.label,
@@ -225,7 +233,7 @@ function CommissioningHandoff() {
             remarks: {
                 issues: 'None',
                 deviations: 'None',
-                recommendations: 'Proceed to commissioning tests.'
+                recommendations: techData?.notes || 'Proceed to commissioning tests.'
             },
             handoff: {
                 ready: 'Yes',
@@ -235,10 +243,18 @@ function CommissioningHandoff() {
         };
     };
 
-    const handleStartCommissioning = () => {
-        // Logic to start commissioning
-        console.log('Starting Commissioning...');
-        navigate('/dashboard'); // Or commissioning dashboard
+    const handleStartCommissioning = async () => {
+        try {
+            setLoading(true);
+            await advanceWorkflowPhase(customerId, 'COMMISSIONING');
+            addToast("Commissioning started successfully!", "success");
+            navigate(`/installation-workflow/${customerId}`); // Navigate back to workflow view
+        } catch (error) {
+            console.error('Failed to start commissioning:', error);
+            addToast("Failed to start commissioning. Please check if installation is QC approved.", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {

@@ -21,7 +21,8 @@ import {
     Plus,
     MoreVertical,
     Eye,
-    Copy
+    Copy,
+    ArrowRight
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Select from '../../components/ui/Select';
@@ -33,6 +34,7 @@ const PHASE_OPTIONS = [
     { value: 'SURVEY', label: 'Survey' },
     { value: 'INSTALLATION', label: 'Installation' },
     { value: 'COMMISSIONING', label: 'Commissioning' },
+    { value: 'LIVE', label: 'Live' },
     { value: 'PLANT', label: 'Plant General' }
 ];
 
@@ -98,6 +100,7 @@ function AuditTrail() {
             case 'SURVEY': return 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10';
             case 'INSTALLATION': return 'text-solar-yellow border-solar-yellow/30 bg-solar-yellow/10';
             case 'COMMISSIONING': return 'text-blue-400 border-blue-400/30 bg-blue-400/10';
+            case 'LIVE': return 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
             default: return 'text-white/50 border-white/20 bg-white/5';
         }
     };
@@ -110,189 +113,151 @@ function AuditTrail() {
             <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
             <div className="fixed top-0 left-0 w-[600px] h-[600px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
 
-            {/* Header */}
+            {/* --- Premium Header Area --- */}
             <div className="relative z-10 px-6 md:px-12 py-8 max-w-7xl mx-auto w-full">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" onClick={() => navigate(-1)} className="w-12 h-12 rounded-full glass flex items-center justify-center p-0 hover:bg-white/10 group">
-                            <ArrowLeft className="w-6 h-6 text-white group-hover:-translate-x-1 transition-transform" />
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => navigate(-1)} 
+                            className="flex items-center gap-3 text-white/60 hover:text-white p-0 h-auto hover:bg-transparent group"
+                        >
+                            <div className="w-10 h-10 glass rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                                <ArrowLeft className="w-5 h-5 text-solar-yellow group-hover:-translate-x-1 transition-transform" />
+                            </div>
+                            <span className="text-xs text-solar-yellow font-black uppercase tracking-[0.2em]">Back</span>
                         </Button>
-                        <div>
-                            <h1 className="text-3xl font-black uppercase rim-light tracking-tighter">
-                                Audit Trail <span className="text-white/40">&</span> History
-                            </h1>
-                            <p className="text-white/50 text-sm">System accountability log for <span className="text-white font-bold">Delhi Solar Plant</span></p>
-                        </div>
                     </div>
 
-                    <Button variant="outline" className="hidden md:flex items-center gap-2 border-white/10 text-white/60 hover:text-white hover:bg-white/5">
-                        <Download className="w-4 h-4" /> Export Log
-                    </Button>
+                    <div className="text-right">
+                        <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            System Accountability Log
+                        </div>
+                        <h1 className="text-4xl font-black uppercase tracking-tighter text-white">
+                            Audit <span className="text-solar-yellow">Trail</span>
+                        </h1>
+                    </div>
                 </div>
 
-                {/* Filter Bar */}
-                <div className="glass rounded-2xl p-6 mb-8 border-t border-white/10 overflow-visible relative z-20">
-                    <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end">
-                        <div className="w-full md:w-48 lg:w-56">
+                {/* Filter & Action Bar */}
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mt-12 mb-8">
+                    <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
+                        <div className="w-full md:w-64">
                             <Select
-                                label="Filter by Phase"
                                 options={PHASE_OPTIONS}
                                 value={filterPhase}
                                 onChange={(e) => setFilterPhase(e.target.value)}
                                 icon={Filter}
+                                className="bg-white/5 border-white/5 hover:border-white/10"
                             />
                         </div>
-                        <div className="w-full md:w-48 lg:w-56">
+                        <div className="w-full md:w-64">
                             <Select
-                                label="Action Type"
                                 options={ACTION_OPTIONS}
                                 value={filterAction}
                                 onChange={(e) => setFilterAction(e.target.value)}
                                 icon={Zap}
+                                className="bg-white/5 border-white/5 hover:border-white/10"
                             />
                         </div>
-
-                        {/* Date Selection */}
-                        <div className="relative w-full md:flex-1 min-w-[300px]">
+                        <div className="flex-1 w-full md:min-w-[300px]">
                             <DateTimePicker
-                                label="Date Range"
                                 mode="range"
-                                value={dateRange.start ? dateRange : null} // Handle potential empty string initial state safely
+                                value={dateRange.start ? dateRange : null}
                                 onChange={(val) => setDateRange(val || { start: null, end: null })}
+                                className="bg-white/5 border-white/5"
                             />
                         </div>
+                    </div>
 
-                        <div className="w-full md:w-auto">
-                            <label className="block text-xs font-bold uppercase tracking-widest mb-2 text-transparent select-none">Reset</label>
-                            <Button
-                                onClick={() => { setFilterPhase('ALL'); setFilterAction('ALL'); }}
-                                className="w-full md:w-auto px-8 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 whitespace-nowrap"
-                            >
-                                Reset
-                            </Button>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            onClick={() => { setFilterPhase('ALL'); setFilterAction('ALL'); setDateRange({ start: '', end: '' }); }}
+                            variant="ghost"
+                            className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white"
+                        >
+                            Reset Filters
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            className="bg-solar-yellow/10 border-solar-yellow/20 hover:border-solar-yellow/50 text-solar-yellow text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-full transition-all hover:shadow-[0_0_20px_rgba(255,215,0,0.15)]"
+                        >
+                            <Download className="w-4 h-4 mr-2" /> Export
+                        </Button>
                     </div>
                 </div>
 
-                {/* Timeline */}
-                <div className="relative pl-8 md:pl-0">
-                    {/* Vertical Line for Mobile */}
-                    <div className="absolute left-8 top-0 bottom-0 w-px bg-white/10 md:hidden" />
-
-                    <div className="space-y-6">
-                        {filteredLogs.map((log, index) => (
-                            <motion.div
-                                key={log.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className={`relative md:grid md:grid-cols-[150px_1fr] gap-8 group ${openMenuId === log.id ? 'z-50' : 'z-auto'}`}
+                {/* Timeline Grid */}
+                <div className="space-y-4">
+                    {filteredLogs.map((log, index) => (
+                        <motion.div
+                            key={log.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="group/card relative"
+                        >
+                            <div 
+                                onClick={() => setSelectedLog(log)}
+                                className="glass p-6 rounded-2xl border border-white/5 hover:border-solar-yellow/30 transition-all cursor-pointer flex flex-col md:flex-row items-center justify-between gap-6"
                             >
-                                {/* Time Column (Desktop) */}
-                                <div className="hidden md:block text-right pt-4">
-                                    <p className="font-mono text-sm text-white/80">{new Date(log.timestamp).toLocaleDateString()}</p>
-                                    <p className="text-xs text-white/40">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                </div>
-
-                                {/* Card */}
-                                <div
-                                    onClick={() => setSelectedLog(log)}
-                                    className="glass p-5 rounded-2xl border border-white/5 hover:border-solar-yellow/30 transition-all cursor-pointer relative"
-                                >
-                                    {/* Mobile Time */}
-                                    <div className="md:hidden absolute top-4 right-4 text-right">
-                                        <p className="text-[10px] text-white/40 font-mono">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                <div className="flex items-center gap-6 flex-1">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-transform duration-500 group-hover/card:scale-110 ${
+                                        log.action === 'COMPLETED' || log.action === 'STEP_COMPLETED' 
+                                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' :
+                                        log.action === 'LOCKED' 
+                                            ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+                                        'bg-white/5 border-white/10 text-white shadow-none'
+                                    }`}>
+                                        {getActionIcon(log.action)}
                                     </div>
 
-                                    <div className="flex items-start gap-4">
-                                        {/* Icon */}
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${log.action === 'COMPLETED' || log.action === 'STEP_COMPLETED' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' :
-                                            log.action === 'LOCKED' ? 'bg-red-500/20 border-red-500 text-red-500' :
-                                                'bg-white/10 border-white/20 text-white'
-                                            }`}>
-                                            {getActionIcon(log.action)}
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <h3 className="font-black text-lg text-white tracking-tight uppercase">{log.entity}</h3>
+                                            <span className={`text-[9px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-widest border ${getPhaseColor(log.phase)}`}>
+                                                {log.phase}
+                                            </span>
                                         </div>
-
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-lg text-white">{log.entity}</h3>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${getPhaseColor(log.phase)}`}>
-                                                    {log.phase}
-                                                </span>
-                                            </div>
-                                            <p className="text-white/60 text-sm mb-3">
-                                                Action: <span className="text-white">{log.action.replace('_', ' ')}</span> • {log.notes}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-xs text-white/40">
-                                                <User className="w-3 h-3" />
-                                                <span className="font-bold text-white/60">{log.performedBy.name}</span>
-                                                <span>({log.performedBy.role.replace('_', ' ')})</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Context Menu */}
-                                        <div className="relative self-center">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(openMenuId === log.id ? null : log.id);
-                                                }}
-                                                className="h-8 w-8 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                                            >
-                                                <MoreVertical className="w-5 h-5" />
-                                            </Button>
-
-                                            {/* Dropdown */}
-                                            <AnimatePresence>
-                                                {openMenuId === log.id && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                        className="absolute right-0 top-10 w-48 bg-deep-navy border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        <div className="p-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                onClick={() => {
-                                                                    setSelectedLog(log);
-                                                                    setOpenMenuId(null);
-                                                                }}
-                                                                className="w-full justify-start px-4 py-3 text-sm font-bold text-white hover:bg-white/5 rounded-lg flex items-center gap-2 h-auto"
-                                                            >
-                                                                <Eye className="w-4 h-4 text-solar-yellow" /> View Details
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(JSON.stringify(log, null, 2));
-                                                                    setOpenMenuId(null);
-                                                                }}
-                                                                className="w-full justify-start px-4 py-3 text-sm font-bold text-white hover:bg-white/5 rounded-lg flex items-center gap-2 h-auto"
-                                                            >
-                                                                <Copy className="w-4 h-4 text-blue-400" /> Copy Data
-                                                            </Button>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+                                        <p className="text-white/60 text-sm">
+                                            <span className="text-solar-yellow font-bold">{log.action.replace('_', ' ')}</span> • {log.notes}
+                                        </p>
                                     </div>
                                 </div>
-                            </motion.div>
-                        ))}
-                    </div>
+
+                                <div className="flex md:flex-col items-center md:items-end gap-6 md:gap-1">
+                                    <div className="text-right order-2 md:order-1">
+                                        <p className="font-mono text-[11px] font-bold text-white/80">{new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        <div className="flex items-center justify-end gap-2 text-[10px] text-white/40 font-bold uppercase tracking-wider mt-1">
+                                            <User className="w-3 h-3" />
+                                            <span>{log.performedBy.name}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="order-1 md:order-2">
+                                        <Button
+                                            variant="outline"
+                                            className="bg-white/5 border-white/10 hover:border-solar-yellow/50 text-white/40 hover:text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full transition-all group/btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedLog(log);
+                                            }}
+                                        >
+                                            Details <ArrowRight className="w-3.5 h-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
 
                     {filteredLogs.length === 0 && (
-                        <div className="text-center py-20 text-white/30">
-                            <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No audit logs found for selected filters.</p>
+                        <div className="text-center py-32 glass rounded-3xl border border-white/5">
+                            <History className="w-16 h-16 mx-auto mb-6 text-white/10" />
+                            <h3 className="text-xl font-bold text-white/40 uppercase tracking-widest">No Records Found</h3>
+                            <p className="text-white/20 text-sm mt-2">Adjust your filters to see more results</p>
                         </div>
                     )}
-
                 </div>
             </div>
 

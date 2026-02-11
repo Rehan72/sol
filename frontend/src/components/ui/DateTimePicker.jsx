@@ -239,7 +239,7 @@ const DateTimePicker = ({
                         initial={{ opacity: 0, y: dropUp ? -10 : 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: dropUp ? -10 : 10, scale: 0.95 }}
-                        className={`absolute z-50 ${dropUp ? 'bottom-full mb-2' : 'mt-2'} w-full min-w-[320px] max-w-sm bg-deep-navy/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-4`}
+                        className={`absolute z-1000 ${dropUp ? 'bottom-full mb-2' : 'mt-2'} w-full min-w-[320px] max-w-sm bg-deep-navy/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-4`}
                     >
                         {/* Header: Month Checks */}
                         <div className="flex items-center justify-between mb-4">
