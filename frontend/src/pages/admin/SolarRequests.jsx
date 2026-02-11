@@ -279,14 +279,6 @@ const SolarRequests = () => {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-deep-navy flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-solar-yellow animate-spin" />
-            </div>
-        );
-    }
-
     return (
         <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
             {/* Background Effects */}

@@ -8,19 +8,13 @@ import {
     Clock,
     Map,
     Users,
-    AlertCircle,
-    Calendar,
     ChevronRight,
     FileText,
     Camera,
-    Upload,
     Zap,
     Hammer,
     Lock,
-    PlayCircle,
-    MoreHorizontal,
     X,
-    Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import SurveyReport from '../../components/reports/SurveyReport'; // Importing SurveyReport

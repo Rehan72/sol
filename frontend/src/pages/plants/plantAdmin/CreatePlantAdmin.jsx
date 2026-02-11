@@ -191,7 +191,8 @@ function CreatePlantAdmin() {
     setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e.preventDefault();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
     // Validate current tab fields before proceeding
     const currentTabFields = currentIndex === 0
