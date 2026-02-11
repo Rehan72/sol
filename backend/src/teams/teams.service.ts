@@ -5,6 +5,7 @@ import { Team } from '../entities/team.entity';
 import { TeamMember } from '../entities/team-member.entity';
 import { User } from '../entities/user.entity';
 import { Survey } from '../entities/survey.entity';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class TeamsService {
@@ -19,7 +20,7 @@ export class TeamsService {
         private surveyRepository: Repository<Survey>,
     ) { }
 
-    async create(createTeamDto: any) {
+    async create(createTeamDto: any, currentUser: User) {
         const { teamLeadId, customerId, members, ...teamData } = createTeamDto;
 
         // Check if team code is unique
@@ -29,6 +30,11 @@ export class TeamsService {
         }
 
         const team = this.teamsRepository.create(teamData as DeepPartial<Team>);
+
+        // Automatically assign plant if created by Plant Admin
+        if (currentUser.role === Role.PLANT_ADMIN && currentUser.plant?.id) {
+            team.plant = { id: currentUser.plant.id };
+        }
 
         if (teamLeadId) {
             const lead = await this.usersRepository.findOne({ where: { id: teamLeadId } });
@@ -68,8 +74,17 @@ export class TeamsService {
         return this.findOne(savedTeam.id);
     }
 
-    async findAll(query: any) {
+    async findAll(query: any, currentUser: User) {
         const where: any = {};
+
+        // Filter by plant for Plant Admin or Employee
+        if (currentUser.role === Role.PLANT_ADMIN || currentUser.role === Role.EMPLOYEE) {
+            if (currentUser.plant?.id) {
+                where.plant = { id: currentUser.plant.id };
+            } else {
+                return [];
+            }
+        }
         if (query.type) {
             where.type = query.type;
         }

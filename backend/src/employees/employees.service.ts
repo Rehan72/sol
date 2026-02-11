@@ -12,22 +12,36 @@ export class EmployeesService {
         private usersRepository: Repository<User>,
     ) { }
 
-    async create(createEmployeeDto: any) {
+    async create(createEmployeeDto: any, currentUser: User) {
         const { password, ...rest } = createEmployeeDto;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const employee = this.usersRepository.create({
+        const employeeData: any = {
             ...rest,
             password: hashedPassword,
             role: rest.role || Role.EMPLOYEE,
-        });
+        };
+
+        // If a Plant Admin is creating an employee, automatically assign their plant
+        if (currentUser.role === Role.PLANT_ADMIN && currentUser.plant?.id) {
+            employeeData.plant = { id: currentUser.plant.id };
+        }
+
+        const employee = this.usersRepository.create(employeeData);
 
         return this.usersRepository.save(employee);
     }
 
-    async findAll() {
+    async findAll(currentUser: User) {
+        const where: any = { role: Role.EMPLOYEE };
+
+        // If a Plant Admin is fetching employees, only show those assigned to their plant
+        if (currentUser.role === Role.PLANT_ADMIN && currentUser.plant?.id) {
+            where.plant = { id: currentUser.plant.id };
+        }
+
         return this.usersRepository.find({
-            where: { role: Role.EMPLOYEE },
+            where,
         });
     }
 

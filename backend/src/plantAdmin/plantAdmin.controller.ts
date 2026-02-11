@@ -9,6 +9,7 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PlantAdminService } from './plantAdmin.service';
@@ -45,8 +46,8 @@ export class PlantAdminController {
         status: 200,
         description: 'List of all plant admins',
     })
-    async findAll() {
-        return this.plantAdminService.findAll();
+    async findAll(@Req() req: any) {
+        return this.plantAdminService.findAll(req.user);
     }
 
     @Get('statistics')

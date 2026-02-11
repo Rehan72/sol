@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../common/guards/access-token.guard';
@@ -11,13 +11,13 @@ export class EmployeesController {
     constructor(private readonly employeesService: EmployeesService) { }
 
     @Post()
-    create(@Body() createEmployeeDto: any) {
-        return this.employeesService.create(createEmployeeDto);
+    create(@Body() createEmployeeDto: any, @Req() req: any) {
+        return this.employeesService.create(createEmployeeDto, req.user);
     }
 
     @Get()
-    findAll() {
-        return this.employeesService.findAll();
+    findAll(@Req() req: any) {
+        return this.employeesService.findAll(req.user);
     }
 
     @Get(':id')

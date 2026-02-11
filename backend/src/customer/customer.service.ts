@@ -288,7 +288,7 @@ export class CustomerService {
 
     const params: any[] = [Role.CUSTOMER, true];
 
-    if (currentUser.role === Role.PLANT_ADMIN) {
+    if (currentUser.role === Role.PLANT_ADMIN || currentUser.role === Role.EMPLOYEE) {
       if (currentUser.plant?.id) {
         sql += ` AND u.plant->>'id' = $3`;
         params.push(currentUser.plant.id);
@@ -341,7 +341,7 @@ export class CustomerService {
 
     const params: any[] = [Role.CUSTOMER];
 
-    if (currentUser.role === Role.PLANT_ADMIN) {
+    if (currentUser.role === Role.PLANT_ADMIN || currentUser.role === Role.EMPLOYEE) {
       if (currentUser.plant?.id) {
         sql += ` AND u.plant->>'id' = $2`;
         params.push(currentUser.plant.id);

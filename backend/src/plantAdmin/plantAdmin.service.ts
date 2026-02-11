@@ -42,14 +42,13 @@ export class PlantAdminService {
         }
 
         // Check if plant is already assigned to another admin
-        const existingAssignment = await this.userRepository.findOne({
-            where: {
-                role: Role.PLANT_ADMIN,
-            },
-        });
+        const existingAssignment = await this.userRepository
+            .createQueryBuilder('user')
+            .where('user.role = :role', { role: Role.PLANT_ADMIN })
+            .andWhere("user.plant->>'id' = :plantId", { plantId: createPlantAdminDto.assignedPlantId })
+            .getOne();
 
-        // Check if any plant admin has this plant assigned
-        if (existingAssignment && existingAssignment.plant?.id === createPlantAdminDto.assignedPlantId) {
+        if (existingAssignment) {
             throw new ConflictException('This plant is already assigned to another admin');
         }
 
@@ -81,9 +80,16 @@ export class PlantAdminService {
         return savedPlantAdmin;
     }
 
-    async findAll(): Promise<any[]> {
+    async findAll(currentUser: User): Promise<any[]> {
+        const where: any = { role: Role.PLANT_ADMIN };
+
+        // If a Plant Admin is fetching, they only see themselves (or their assigned plant's admins)
+        if (currentUser.role === Role.PLANT_ADMIN && currentUser.plant?.id) {
+            where.id = currentUser.id;
+        }
+
         const plantAdmins = await this.userRepository.find({
-            where: { role: Role.PLANT_ADMIN },
+            where,
             select: [
                 'id',
                 'name',

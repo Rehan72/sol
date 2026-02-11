@@ -19,6 +19,9 @@ export class Team {
     @Column({ default: 'active' })
     status: string; // active, inactive
 
+    @Column({ type: 'jsonb', nullable: true })
+    plant: { id: string };
+
     // Relation to Customer (User)
     @Column({ nullable: true })
     customerId: string;
