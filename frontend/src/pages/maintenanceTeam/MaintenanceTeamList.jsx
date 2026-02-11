@@ -232,7 +232,7 @@ function MaintenanceTeamList() {
                             </h1>
                         </div>
 
-                        <Button
+                        {/* <Button
                             onClick={() => navigate('/maintenance-teams/create')}
                             variant="default"
                             size="lg"
@@ -240,6 +240,12 @@ function MaintenanceTeamList() {
                         >
                             <Plus className="w-5 h-5" />
                             CREATE NEW TEAM
+                        </Button> */}
+                           <Button
+                            onClick={() => navigate('/maintenance-teams/create')}
+                            className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+                        >
+                            <Plus className="w-5 h-5" /> New Maintenance Team
                         </Button>
                     </div>
                 </motion.div>

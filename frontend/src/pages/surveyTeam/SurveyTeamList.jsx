@@ -241,7 +241,7 @@ function SurveyTeamList() {
               </h1>
             </div>
 
-            <Button
+            {/* <Button
               onClick={() => navigate('/survey-teams/create')}
               variant="default"
               size="lg"
@@ -249,6 +249,12 @@ function SurveyTeamList() {
             >
               <Plus className="w-5 h-5" />
               CREATE SURVEY TEAM
+            </Button> */}
+            <Button
+              onClick={() => navigate('/survey-teams/create')}
+              className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+            >
+              <Plus className="w-5 h-5" /> New Survey Team
             </Button>
           </div>
         </motion.div>

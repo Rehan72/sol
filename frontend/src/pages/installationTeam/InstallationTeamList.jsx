@@ -240,7 +240,7 @@ function InstallationTeamList() {
               </h1>
             </div>
 
-            <Button
+            {/* <Button
               onClick={() => navigate('/installation-teams/create')}
               variant="default"
               size="lg"
@@ -248,7 +248,13 @@ function InstallationTeamList() {
             >
               <Plus className="w-5 h-5" />
               CREATE INSTALLATION TEAM
-            </Button>
+            </Button> */}
+            <Button
+                                        onClick={() => navigate('/installation-teams/create')}
+                                        className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+                                    >
+                                        <Plus className="w-5 h-5" /> New Installation Team
+                                    </Button>
           </div>
         </motion.div>
 
