@@ -163,8 +163,10 @@ const ServiceManagement = () => {
                 </tr>
               ) : (
                 tickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-white/5 transition-all">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={ticket.id} className="hover:bg-white/5 transition-all group">
+                    <td className="px-6 py-4 whitespace-nowrap relative overflow-hidden">
+                      {/* Left Hover Indicator */}
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
                       <div>
                         <div className="text-blue-400 font-mono font-bold text-sm mb-0.5">{ticket.ticketNumber}</div>
                         <div className="text-white text-sm font-medium truncate max-w-[200px]">{ticket.description}</div>

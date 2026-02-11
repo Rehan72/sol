@@ -144,7 +144,9 @@ const CustomerList = () => {
                                 transition={{ delay: index * 0.04, duration: 0.5 }}
                                 className="group relative"
                             >
-                                <div className="glass p-8 rounded-[2rem] border border-white/5 hover:border-solar-yellow/20 hover:bg-white/10 transition-all duration-500 cursor-default flex flex-col xl:flex-row items-center justify-between gap-10">
+                                <div className="glass p-8 rounded-[1rem] border border-white/5 hover:border-solar-yellow/20 hover:bg-white/10 transition-all duration-500 cursor-default flex flex-col xl:flex-row items-center justify-between gap-10 overflow-hidden">
+                                    {/* Left Hover Indicator */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
                                     
                                     {/* Brand/Avatar Block */}
                                     <div className="flex items-center gap-8 flex-1 min-w-0 w-full">

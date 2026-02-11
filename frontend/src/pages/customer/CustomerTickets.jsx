@@ -89,8 +89,10 @@ const CustomerTickets = () => {
           tickets.map((ticket) => (
             <div 
               key={ticket.id}
-              className="group glass p-6 rounded-2xl hover:border-solar-yellow/20 transition-all cursor-pointer"
+              className="group glass p-6 rounded-[1rem] hover:border-solar-yellow/20 transition-all cursor-pointer relative overflow-hidden"
             >
+              {/* Left Hover Indicator */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
                   <div className={`p-3 rounded-xl border ${getStatusStyle(ticket.status)}`}>

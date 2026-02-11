@@ -373,8 +373,10 @@ const SolarRequests = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                             key={lead.id}
-                            className="glass p-6 rounded-2xl border border-white/5 hover:border-solar-yellow/30 transition-all group flex flex-col md:flex-row items-center justify-between gap-6"
+                            className="glass p-6 rounded-[1rem] border border-white/5 hover:border-solar-yellow/30 transition-all group flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
                         >
+                            {/* Left Hover Indicator */}
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
                             <div className="flex items-center gap-6">
                                 <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-white/40">
                                     {lead.name.charAt(0)}

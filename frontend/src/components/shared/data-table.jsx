@@ -122,9 +122,15 @@ export function DataTable({
               table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
                   <TableRow
-                    data-state={row.getIsSelected() && "selected"}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="group"
+                  >
+                    {row.getVisibleCells().map((cell, index) => (
+                      <TableCell key={cell.id} className="relative overflow-hidden">
+                        {index === 0 && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
+                        )}
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
