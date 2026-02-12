@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('surveys')
@@ -6,7 +6,7 @@ export class Survey {
     @PrimaryGeneratedColumn('increment')
     id: number;
 
-    @Column({ type: 'uuid' })
+    @Column({ type: 'uuid', nullable: true })
     surveyorId: string;
 
     @ManyToOne(() => User)
@@ -18,6 +18,9 @@ export class Survey {
 
     @Column({ nullable: true })
     customerPhone: string;
+
+    @Column({ nullable: true })
+    customerId: string;
 
     @Column({ nullable: true })
     customerEmail: string;
@@ -34,87 +37,24 @@ export class Survey {
     @Column({ nullable: true })
     pincode: string;
 
-    @Column({ nullable: true })
-    customerType: string; // Residential / Commercial / Industrial / Utility
-
-    @Column({ nullable: true })
-    electricityConsumerNumber: string;
-
-    @Column({ nullable: true })
-    discomName: string;
-
-    // B. Site Location & Roof Details
-    @Column({ nullable: true })
-    siteType: string; // Rooftop / Ground Mounted / Carport
-
-    @Column({ nullable: true })
-    roofType: string; // RCC / Metal / Asbestos / Tile
-
-    @Column({ nullable: true })
-    roofOrientation: string; // Azimuth
+    // ─── 1. ENERGY & LOAD DETAILS ───
+    @Column({ type: 'float', nullable: true })
+    averageMonthlyConsumption: number; // kWh
 
     @Column({ type: 'float', nullable: true })
-    roofTiltAngle: number;
+    daytimeConsumptionPercentage: number; // %
 
     @Column({ type: 'float', nullable: true })
-    availableShadowFreeArea: number; // sq.m
-
-    @Column({ nullable: true })
-    roofCondition: string; // Good / Repair Required
-
-    @Column({ nullable: true })
-    roofOwnership: string; // Owned / Leased
-
-    // C. Shading & Obstruction Analysis
-    @Column({ nullable: true })
-    shadingPresence: string; // None / Partial / Heavy
-
-    @Column({ nullable: true })
-    shadingSource: string; // Trees / Buildings / Water Tank / Towers
-
-    @Column({ nullable: true })
-    shadowTiming: string; // Morning / Noon / Evening
-
-    @Column({ type: 'boolean', nullable: true })
-    seasonalShadingImpact: boolean;
-
-    @Column({ type: 'jsonb', nullable: true })
-    photoUrls: string[]; // Multiple Photo Uploads
-
-    // D. Electrical Infrastructure Details
-    @Column({ type: 'float', nullable: true })
-    existingSanctionLoad: number; // kW
-
-    @Column({ type: 'float', nullable: true })
-    contractDemand: number; // kVA
-
-    @Column({ nullable: true })
-    existingTransformerCapacity: string;
+    sanctionedLoad: number; // kW / kVA
 
     @Column({ nullable: true })
     connectionType: string; // LT / HT
 
     @Column({ nullable: true })
-    mainDistributionBoardLocation: string;
+    discomName: string;
 
-    @Column({ type: 'boolean', nullable: true })
-    earthingAvailability: boolean;
-
-    @Column({ type: 'boolean', nullable: true })
-    lightningArrestorAvailable: boolean;
-
-    // E. Energy Consumption Details
-    @Column({ type: 'float', nullable: true })
-    averageMonthlyUnits: number; // kWh
-
-    @Column({ nullable: true })
-    last12MonthsBillUrl: string; // Upload
-
-    @Column({ nullable: true })
-    peakLoadTiming: string;
-
-    @Column({ type: 'float', nullable: true })
-    daytimeLoadPercentage: number;
+    @Column({ type: 'text', nullable: true })
+    futureLoadExpansionPlan: string;
 
     @Column({ type: 'boolean', nullable: true })
     dieselGeneratorAvailable: boolean;
@@ -122,28 +62,131 @@ export class Survey {
     @Column({ nullable: true })
     dieselGeneratorCapacity: string;
 
-    // F. Safety & Compliance
-    @Column({ type: 'boolean', nullable: true })
-    fireSafetyClearanceRequired: boolean;
+    // ─── 2. ROOF / LAND DETAILS ───
+    @Column({ nullable: true })
+    siteType: string; // Rooftop / Ground / Carport
+
+    @Column({ nullable: true })
+    roofType: string; // RCC / Metal / Tile / Asbestos
+
+    @Column({ type: 'float', nullable: true })
+    roofArea: number; // sq.m
+
+    @Column({ type: 'float', nullable: true })
+    shadowFreeUsableArea: number; // sq.m
+
+    @Column({ nullable: true })
+    roofOrientation: string; // North / South / East / West
+
+    @Column({ type: 'float', nullable: true })
+    tiltAngle: number;
+
+    @Column({ nullable: true })
+    roofCondition: string; // Good, Repair Required
+
+    @Column({ type: 'float', nullable: true })
+    parapetHeight: number; // meters
+
+    @Column({ type: 'text', nullable: true })
+    obstructions: string; // water tank, AC units, etc.
 
     @Column({ type: 'boolean', nullable: true })
     structuralStabilityCertificateRequired: boolean;
 
-    @Column({ type: 'boolean', nullable: true })
-    netMeteringAllowed: boolean;
+    // ─── 3. SHADING & ENVIRONMENTAL CONDITIONS ───
+    @Column({ type: 'float', nullable: true })
+    nearbyBuildingHeight: number; // meters
+
+    @Column({ type: 'text', nullable: true })
+    treeShading: string;
+
+    @Column({ nullable: true })
+    shadowTiming: string; // Morning / Evening
+
+    @Column({ type: 'text', nullable: true })
+    seasonalShading: string;
+
+    @Column({ nullable: true })
+    dustLevel: string; // Low / Medium / High (Industrial)
+
+    @Column({ nullable: true })
+    windZone: string;
 
     @Column({ type: 'boolean', nullable: true })
-    discomTechnicalApprovalRequired: boolean;
+    coastalArea: boolean; // Corrosion risk
 
-    // G. Surveyor Observations
+    // ─── 4. ELECTRICAL INFRASTRUCTURE ───
+    @Column({ nullable: true })
+    mainDBLocation: string;
+
+    @Column({ type: 'float', nullable: true })
+    distanceRoofToDB: number; // meters
+
+    @Column({ type: 'boolean', nullable: true })
+    earthingAvailable: boolean;
+
+    @Column({ type: 'boolean', nullable: true })
+    lightningArresterAvailable: boolean;
+
+    @Column({ type: 'boolean', nullable: true })
+    netMeteringFeasibility: boolean;
+
+    @Column({ nullable: true })
+    transformerCapacity: string; // if HT
+
+    @Column({ type: 'boolean', nullable: true })
+    panelRoomSpace: boolean;
+
+    @Column({ type: 'float', nullable: true })
+    cableRouteLength: number; // meters
+
+    // ─── 5. FINANCIAL & APPROVAL DETAILS ───
+    @Column({ nullable: true })
+    customerType: string; // Residential / Commercial / Industrial / Utility
+
+    @Column({ type: 'boolean', nullable: true })
+    subsidyEligibility: boolean;
+
+    @Column({ type: 'boolean', nullable: true })
+    gstApplicable: boolean;
+
+    @Column({ type: 'boolean', nullable: true })
+    acceleratedDepreciation: boolean; // Commercial
+
+    @Column({ nullable: true })
+    discomApprovalTimeline: string;
+
+    @Column({ nullable: true })
+    paymentPreference: string; // Milestone-based
+
+    // ─── 6. MANDATORY SITE DOCUMENTS (Photo Uploads) ───
+    @Column({ type: 'jsonb', nullable: true })
+    roofPhotos: string[]; // wide angle
+
+    @Column({ type: 'jsonb', nullable: true })
+    shadowPhotos: string[];
+
+    @Column({ type: 'jsonb', nullable: true })
+    mainDBPhoto: string[];
+
+    @Column({ type: 'jsonb', nullable: true })
+    meterPhoto: string[];
+
+    @Column({ type: 'jsonb', nullable: true })
+    electricityBillCopy: string[];
+
+    @Column({ type: 'jsonb', nullable: true })
+    structureConditionPhotos: string[];
+
+    // ─── SURVEY CONCLUSIONS ───
+    @Column({ type: 'float', nullable: true })
+    recommendedSystemSize: number; // kW
+
     @Column({ type: 'text', nullable: true })
     installationChallenges: string;
 
     @Column({ type: 'text', nullable: true })
     specialNotes: string;
-
-    @Column({ type: 'float', nullable: true })
-    recommendedSystemSize: number; // kW
 
     @Column({ default: 'DRAFT' })
     status: string; // DRAFT / IN_PROGRESS / COMPLETED / APPROVED / REJECTED

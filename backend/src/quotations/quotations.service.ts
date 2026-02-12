@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Quotation } from '../entities/quotation.entity';
 import { Survey } from '../entities/survey.entity';
 import { QuotationApproval } from '../entities/quotation-approval.entity';
+import { CostEstimationService } from '../cost-estimation/cost-estimation.service';
 import { Role } from '../common/enums/role.enum';
 import puppeteer from 'puppeteer';
 
@@ -16,6 +17,7 @@ export class QuotationsService {
         private surveyRepository: Repository<Survey>,
         @InjectRepository(QuotationApproval)
         private approvalRepository: Repository<QuotationApproval>,
+        private costEstimationService: CostEstimationService,
     ) { }
 
     async create(createQuotationDto: any) {
@@ -28,7 +30,7 @@ export class QuotationsService {
     }
 
     async findOne(id: number) {
-        const quotation = await this.quotationRepository.findOne({ where: { id }, relations: ['survey'] });
+        const quotation = await this.quotationRepository.findOne({ where: { id }, relations: ['survey', 'costEstimation'] });
         if (!quotation) throw new NotFoundException(`Quotation #${id} not found`);
         return quotation;
     }
@@ -155,49 +157,73 @@ export class QuotationsService {
 
     // --- Auto-Flow Logic ---
 
-    async generateDraftQuotation(surveyId: number) {
+    async generateDraftQuotation(surveyId: number, costEstimationId?: number) {
         const survey = await this.surveyRepository.findOne({ where: { id: surveyId } });
         if (!survey) throw new NotFoundException('Survey not found');
 
         // 1. System Size Calculation
-        // recommendedKW = (avgMonthlyUnits / 30 / sunlightHours) * efficiencyFactor
-        const avgMonthlyUnits = survey.averageMonthlyUnits || 0;
-        const sunlightHours = 5; // Configurable ideally
-        const efficiencyFactor = 0.75; // Configurable
-        // Avoid division by zero
-        const recommendedKW = avgMonthlyUnits > 0 ? (avgMonthlyUnits / 30 / sunlightHours) * efficiencyFactor : 3; // Default 3kW
+        const avgMonthlyUnits = survey.averageMonthlyConsumption || 0;
+        const sunlightHours = 5; 
+        const efficiencyFactor = 0.75;
+        let finalKW = avgMonthlyUnits > 0 ? (avgMonthlyUnits / 30 / sunlightHours) * efficiencyFactor : 3;
+        finalKW = Math.ceil(finalKW * 2) / 2;
 
-        // Round to nearest 0.5 or 1
-        const finalKW = Math.ceil(recommendedKW * 2) / 2;
+        let costSolarModules = 0;
+        let costInverters = 0;
+        let costStructure = 0;
+        let costBOS = 0;
+        let costInstallation = 0;
+        let costNetMetering = 0;
+        let totalProjectCost = 0;
 
-        // 2. Cost Calculation Engine (Estimates)
-        const ratePerKW = {
-            modules: 25000,
-            inverter: 15000,
-            structure: 5000,
-            bos: 10000,
-            installation: 5000,
-            netMetering: 10000 // Fixed
-        };
+        if (costEstimationId) {
+            const estimation = await this.costEstimationService.findOne(costEstimationId);
+            if (estimation) {
+                if (estimation.systemCapacity) finalKW = estimation.systemCapacity;
+                
+                costSolarModules = this.stageTotal(estimation.stagePanels);
+                costInverters = this.stageTotal(estimation.stageInverter);
+                costStructure = this.stageTotal(estimation.stageMounting);
+                costBOS = this.stageTotal(estimation.stageDesign)
+                    + this.stageTotal(estimation.stageDcElectrical)
+                    + this.stageTotal(estimation.stageEarthing)
+                    + this.stageTotal(estimation.stageMonitoring);
+                costInstallation = this.stageTotal(estimation.stageLabour);
+                costNetMetering = this.stageTotal(estimation.stageGridConnection);
+                
+                totalProjectCost = estimation.totalProjectCost;
+            }
+        } else {
+             // Fallback Logic
+            const ratePerKW = {
+                modules: 25000,
+                inverter: 15000,
+                structure: 5000,
+                bos: 10000,
+                installation: 5000,
+                netMetering: 10000 
+            };
+    
+            costSolarModules = finalKW * ratePerKW.modules;
+            costInverters = finalKW * ratePerKW.inverter;
+            costStructure = finalKW * ratePerKW.structure;
+            costBOS = finalKW * ratePerKW.bos;
+            costInstallation = finalKW * ratePerKW.installation;
+            costNetMetering = ratePerKW.netMetering;
+    
+            totalProjectCost = costSolarModules + costInverters + costStructure + costBOS + costInstallation + costNetMetering;
+        }
 
-        const costSolarModules = finalKW * ratePerKW.modules;
-        const costInverters = finalKW * ratePerKW.inverter;
-        const costStructure = finalKW * ratePerKW.structure;
-        const costBOS = finalKW * ratePerKW.bos;
-        const costInstallation = finalKW * ratePerKW.installation;
-        const costNetMetering = ratePerKW.netMetering;
-
-        const totalProjectCost = costSolarModules + costInverters + costStructure + costBOS + costInstallation + costNetMetering;
         const subsidy = this.calculateSubsidy(finalKW, totalProjectCost);
         const netProjectCost = totalProjectCost - subsidy;
 
         // 3. Savings & ROI Engine
-        const annualGeneration = finalKW * 1500; // 1500 units per kW per year
-        const tariff = 8; // Rs 8 per unit default
+        const annualGeneration = finalKW * 1500; 
+        const tariff = 8;
         const annualSavings = annualGeneration * tariff;
         const paybackPeriod = annualSavings > 0 ? netProjectCost / annualSavings : 0;
         const savings25Years = annualSavings * 25;
-        const irr = 15; // Placeholder IRR
+        const irr = 15;
 
         // Create Draft Quotation
         const quotation = this.quotationRepository.create({
@@ -226,9 +252,16 @@ export class QuotationsService {
             status: 'DRAFT',
             currentApproverRole: Role.EMPLOYEE,
             version: 1,
+            costEstimationId: costEstimationId || null
         });
 
-        return this.quotationRepository.save(quotation);
+        const savedQuotation = await this.quotationRepository.save(quotation);
+
+        if (costEstimationId) {
+             await this.costEstimationService.linkToQuotation(costEstimationId, savedQuotation.id);
+        }
+
+        return savedQuotation;
     }
 
     private calculateSubsidy(kw: number, totalCost: number): number {
@@ -237,6 +270,77 @@ export class QuotationsService {
         if (kw <= 2) return 60000;
         if (kw <= 3) return 78000;
         return 78000; // Max for > 3kW
+    }
+
+    // --- Generate Quotation from Cost Estimation ---
+
+    private stageTotal(items: { amount: number }[]): number {
+        return (items || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
+
+    async generateFromEstimation(estimationId: number) {
+        const estimation = await this.costEstimationService.findOne(estimationId);
+        if (!estimation) throw new NotFoundException('Cost estimation not found');
+        if (estimation.status !== 'FINALIZED') throw new BadRequestException('Only finalized estimations can generate quotations');
+        if (estimation.quotationId) throw new BadRequestException('A quotation already exists for this estimation');
+
+        // Map 9 BOQ stages → 6 quotation cost categories
+        const costSolarModules = this.stageTotal(estimation.stagePanels);
+        const costInverters = this.stageTotal(estimation.stageInverter);
+        const costStructure = this.stageTotal(estimation.stageMounting);
+        const costBOS = this.stageTotal(estimation.stageDesign)
+            + this.stageTotal(estimation.stageDcElectrical)
+            + this.stageTotal(estimation.stageEarthing)
+            + this.stageTotal(estimation.stageMonitoring);
+        const costInstallation = this.stageTotal(estimation.stageLabour);
+        const costNetMetering = this.stageTotal(estimation.stageGridConnection);
+
+        // Use the estimation's totalProjectCost (includes contingency + GST)
+        const totalProjectCost = estimation.totalProjectCost;
+        const finalKW = estimation.systemCapacity || 3;
+        const subsidy = this.calculateSubsidy(finalKW, totalProjectCost);
+        const netProjectCost = totalProjectCost - subsidy;
+
+        // Savings & ROI (derived from system capacity)
+        const annualGeneration = finalKW * 1500;
+        const tariff = 8;
+        const annualSavings = annualGeneration * tariff;
+        const paybackPeriod = annualSavings > 0 ? netProjectCost / annualSavings : 0;
+
+        const quotation = this.quotationRepository.create({
+            quotationNumber: `QT-${Date.now()}`,
+            proposedSystemCapacity: finalKW,
+            plantType: estimation.plantType || 'Grid-connected',
+            costSolarModules,
+            costInverters,
+            costStructure,
+            costBOS,
+            costInstallation,
+            costNetMetering,
+            totalProjectCost,
+            governmentSubsidy: subsidy,
+            netProjectCost,
+            annualEnergyGeneration: annualGeneration,
+            monthlyAverageGeneration: annualGeneration / 12,
+            cuf: 16,
+            performanceRatio: 78,
+            annualElectricitySavings: annualSavings,
+            electricityTariff: tariff,
+            paybackPeriod: parseFloat(paybackPeriod.toFixed(2)),
+            savings25Years: annualSavings * 25,
+            irr: 15,
+            costEstimationId: estimation.id,
+            status: 'DRAFT',
+            currentApproverRole: Role.EMPLOYEE,
+            version: 1,
+        });
+
+        const savedQuotation = await this.quotationRepository.save(quotation);
+
+        // Link back: update estimation with the generated quotation ID
+        await this.costEstimationService.linkToQuotation(estimation.id, savedQuotation.id);
+
+        return savedQuotation;
     }
 
     // --- PDF Generation ---

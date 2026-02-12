@@ -18,9 +18,11 @@ import {
   FileText,
   Wallet,
   MessageSquare,
+  Calculator,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const location = useLocation();
@@ -40,6 +42,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { name: 'MAINTENANCE TEAMS', icon: Users, path: '/maintenance-teams', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'WORKFLOW EXECUTION', icon: ClipboardCheck, path: '/installation-workflow', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'INSTALLATION_TEAM', 'EMPLOYEE'] },
     { name: 'SOLAR REQUESTS', icon: Sun, path: '/admin/leads', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
+    { name: 'COST ESTIMATION', icon: Calculator, path: '/cost-estimation', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'EMPLOYEE'] },
     { name: 'CUSTOMER', icon: Users, path: '/customer', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
     { name: 'SERVICE TICKETS', icon: MessageSquare, path: '/admin/service', allowedRoles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },

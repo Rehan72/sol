@@ -41,6 +41,9 @@ import ViewQuotation from "../pages/quotations/ViewQuotation";
 import EmployeeDashboard from "../pages/employees/EmployeeDashboard";
 import CustomerTickets from "../pages/customer/CustomerTickets";
 import ServiceManagement from "../pages/admin/ServiceManagement";
+import CostEstimationList from "../pages/costEstimation/CostEstimationList";
+import CostEstimationTemplate from "../pages/costEstimation/CostEstimationTemplate";
+import CostEstimationView from "../pages/costEstimation/CostEstimationView";
 
 export const routeParams = "management";
 
@@ -292,8 +295,20 @@ export default [
     element: ServiceManagement,
     path: `admin/service`,
     exact: true
+  },
+  {
+    element: CostEstimationList,
+    path: `cost-estimation`,
+    exact: true
+  },
+  {
+    element: CostEstimationTemplate,
+    path: `cost-estimation/create`,
+    exact: true
+  },
+  {
+    element: CostEstimationView,
+    path: `cost-estimation/:id`,
+    exact: true
   }
-
-
-
 ]

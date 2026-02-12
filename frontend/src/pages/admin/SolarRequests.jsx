@@ -23,10 +23,10 @@ import Select from '../../components/ui/Select';
 import DateTimePicker from '../../components/ui/DateTimePicker';
 import { useNavigate } from 'react-router-dom';
 import { getSolarRequests, assignSurvey, assignInstallation, markInstallationReady } from '../../api/customer';
+import { generateCostEstimation } from '../../api/costEstimation';
 import { getTeams } from '../../api/teams';
 import { approveQuotation, finalApproveQuotation } from '../../api/quotations';
 import { getPlantPayments } from '../../api/payments';
-import { approveSurvey, rejectSurvey } from '../../api/surveys';
 
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
@@ -150,7 +150,7 @@ const SolarRequests = () => {
         if (customer.latestQuotationStatus === 'DRAFT') return 'Quotation Drafted';
 
         // Survey/Onboarding Workflow
-        if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED') return 'Survey Completed';
+         if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED' || customer.surveyStatus === 'COMPLETED') return 'Survey Completed';
         if (customer.surveyStatus === 'APPROVED') return 'Survey Approved';
         if (customer.surveyStatus === 'REJECTED') return 'Survey Rejected';
         
@@ -311,6 +311,34 @@ const SolarRequests = () => {
         }
     };
 
+    const handleGenerateCostEstimation = async (lead) => {
+        if (!lead.surveyId) {
+            addToast("Survey ID not found", 'error');
+            return;
+        }
+        try {
+            setIsLoading(true);
+            const estimation = await generateCostEstimation(lead.surveyId);
+            addToast("Cost Estimation Generated!", 'success');
+            setTimeout(() => {
+                navigate(`/cost-estimation/${estimation.id}`);
+            }, 1000);
+        } catch (error) {
+            console.error("Failed to generate cost estimation:", error);
+            addToast("Failed to generate cost estimation", 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleConductSurvey = (lead) => {
+        if (!lead.surveyId) {
+             // Fallback if surveyId not present (should be created by backend now)
+             console.warn("No survey ID found for lead", lead);
+        }
+        navigate('/surveys/create', { state: { customer: lead, surveyId: lead.surveyId } });
+    };
+
 
     const handleMarkInstallationReady = async (lead) => {
         try {
@@ -437,16 +465,39 @@ const SolarRequests = () => {
                                                 {lead.status === 'Live' ? 'View Live' : (lead.status === 'Commissioning' || lead.status === 'COMMISSIONING' ? 'View Commissioning' : 'View Workflow')} <ArrowRight className="w-4 h-4 ml-2" />
                                             </span>
                                         )}
+
                                         {lead.status === 'Survey Completed' && <><Wallet className="w-4 h-4 mr-2" /> {lead.latestQuotationId ? 'Review Quote' : 'Create Quote'}</>}
                                         {lead.status === 'Quotation Submitted' && <><FileText className="w-4 h-4 mr-2" /> View Quote</>}
                                         {lead.status === 'Payment Received' && <><Users className="w-4 h-4 mr-2" /> Assign Team</>}
                                     </Button>
+
+                                    {/* Admin/Surveyor: Conduct Survey */}
+                                    {lead.status === 'Survey Assigned' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
+                                        <Button
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); handleConductSurvey(lead); }}
+                                            className="bg-blue-500/20 text-blue-400 border border-blue-500/50 hover:bg-blue-500/40 w-full"
+                                            title="Conduct Survey"
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" /> Conduct Survey
+                                        </Button>
+                                    )}
                                     {/* Survey Approval Actions */}
                                     {lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
                                          <div className="flex gap-2">
                                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleRejectSurvey(lead); }} className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/40">Reject</Button>
                                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleApproveSurvey(lead); }} className="bg-emerald-500 text-white hover:bg-emerald-600">Approve Survey</Button>
                                          </div>
+                                    )}
+
+                                    {/* Plant Admin: Generate Cost Estimation for Completed/Approved Surveys */}
+                                    {(lead.status === 'Survey Completed' || lead.status === 'Survey Approved') && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && !lead.latestQuotationId && (
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); handleGenerateCostEstimation(lead); }}
+                                            className="bg-indigo-600 hover:bg-indigo-700 font-bold border-none"
+                                        >
+                                            <Wallet className="w-4 h-4 mr-2" /> Generate Estimation
+                                        </Button>
                                     )}
 
 

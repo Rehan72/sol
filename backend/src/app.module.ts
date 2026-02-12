@@ -15,6 +15,7 @@ import { SurveysModule } from './surveys/surveys.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { CostEstimationModule } from './cost-estimation/cost-estimation.module';
 
 @Module({
     imports: [
@@ -47,6 +48,7 @@ import { TicketsModule } from './tickets/tickets.module';
         QuotationsModule,
         PaymentsModule,
         TicketsModule,
+        CostEstimationModule,
     ],
 })
 export class AppModule { }

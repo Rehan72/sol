@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuotationById, generateQuotationPdf, submitQuotation, approveQuotation, rejectQuotation } from '../../api/quotations';
-import { Download, CheckCircle, ArrowLeft, Printer, Loader2, Send, XCircle } from 'lucide-react';
+import { Download, CheckCircle, ArrowLeft, Printer, Loader2, Send, XCircle, FileText } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { useAuthStore } from '../../store/authStore';
 
@@ -113,7 +113,17 @@ const ViewQuotation = () => {
                                     {quotation.status}
                                 </span>
                             </div>
-                            <p className="text-(--color-solar-light-gray)">Quotation #: <span className="text-white">{quotation.quotationNumber}</span></p>
+                            {quotation.costEstimationId && (
+                                <div 
+                                    className="flex items-center gap-2 mt-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full w-fit cursor-pointer hover:bg-blue-500/20 transition-all text-blue-400 group"
+                                    onClick={() => navigate(`/cost-estimation/${quotation.costEstimationId}`)}
+                                >
+                                    <FileText size={12} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Source Estimation</span>
+                                    <ArrowLeft size={12} className="rotate-180 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                            )}
+                            <p className="text-(--color-solar-light-gray) mt-2">Quotation #: <span className="text-white">{quotation.quotationNumber}</span></p>
                             <p className="text-(--color-solar-light-gray)">Date: {new Date(quotation.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">

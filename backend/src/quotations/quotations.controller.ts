@@ -12,6 +12,15 @@ export class QuotationsController {
         return this.quotationsService.create(createQuotationDto);
     }
 
+    @UseGuards(AccessTokenGuard)
+    @Post('generate-from-estimation/:id')
+    generateFromEstimation(@Param('id') id: string) {
+        const estimationId = parseInt(id, 10);
+        if (isNaN(estimationId)) throw new BadRequestException('Invalid estimation ID');
+        return this.quotationsService.generateFromEstimation(estimationId);
+    }
+
+
     @Get()
     findAll() {
         return this.quotationsService.findAll();

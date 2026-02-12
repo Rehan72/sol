@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
 import { Survey } from './survey.entity';
+import { CostEstimation } from './cost-estimation.entity';
 
 @Entity('quotations')
 export class Quotation {
@@ -141,6 +142,13 @@ export class Quotation {
 
     @Column({ nullable: true })
     ticketId: string;
+
+    @Column({ type: 'int', nullable: true })
+    costEstimationId: number;
+
+    @ManyToOne(() => CostEstimation, { nullable: true })
+    @JoinColumn({ name: 'costEstimationId' })
+    costEstimation: CostEstimation;
 
     @CreateDateColumn()
     createdAt: Date;

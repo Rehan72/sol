@@ -48,13 +48,32 @@ export class SurveysService {
     async completeSurvey(id: number) {
         const survey = await this.findOne(id);
         
-        // Validation (Basic check)
-        if (!survey.photoUrls || survey.photoUrls.length === 0) {
-           // throw new BadRequestException('Photos are required to complete the survey');
-        }
+        // Validation (Basic check) - Logic here can be expanded to check specific photo fields if needed
+        // For now, we proceed to complete the survey.
 
         survey.status = 'COMPLETED';
-        return this.surveyRepository.save(survey);
+        await this.surveyRepository.save(survey);
+
+        // Update Customer Status to COMPLETED so it disappears from Pending Surveys in Dashboard
+        let customer = null;
+        if (survey.customerId) {
+            customer = await this.userRepository.findOne({ where: { id: survey.customerId } });
+        } else if (survey.customerEmail) {
+            customer = await this.userRepository.findOne({
+                where: {
+                    email: survey.customerEmail,
+                    role: Role.CUSTOMER
+                }
+            });
+        }
+
+        if (customer) {
+            customer.surveyStatus = 'COMPLETED'; 
+            customer.installationStatus = 'SURVEY_COMPLETED';
+            await this.userRepository.save(customer);
+        }
+
+        return survey;
     }
 
     async approveSurvey(id: number, adminId: string) {
@@ -98,4 +117,6 @@ export class SurveysService {
 
         return this.surveyRepository.save(survey);
     }
+
+
 }

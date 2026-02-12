@@ -9,6 +9,7 @@ import { Role } from '../common/enums/role.enum';
 export class SurveysController {
     constructor(private readonly surveysService: SurveysService) { }
 
+
     @Post()
     @UseGuards(AccessTokenGuard, RolesGuard)
     @Roles(Role.SURVEY_TEAM, Role.SUPER_ADMIN, Role.REGION_ADMIN, Role.PLANT_ADMIN, Role.EMPLOYEE)
@@ -49,4 +50,6 @@ export class SurveysController {
     rejectSurvey(@Param('id') id: string, @Body() body: any) {
         return this.surveysService.rejectSurvey(+id, body.adminId, body.reason);
     }
+
+
 }

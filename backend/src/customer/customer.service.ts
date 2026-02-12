@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Plant } from '../entities/plant.entity';
 import { Team } from '../entities/team.entity';
+import { Survey } from '../entities/survey.entity';
 import { Quotation } from '../entities/quotation.entity';
 import { CustomerOnboardingDto } from '../auth/dto/customerOnborading.dto';
 import { Role } from '../common/enums/role.enum';
@@ -16,6 +17,7 @@ export class CustomerService {
     @InjectRepository(Team) private teamRepo: Repository<Team>,
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
+    @InjectRepository(Survey) private surveyRepo: Repository<Survey>,
     private auditService: AuditService
   ) { }
 
@@ -241,11 +243,29 @@ export class CustomerService {
       throw new Error('Team not found');
     }
 
+    const customer = await this.usersRepo.findOneBy({ id: customerId });
+    if (!customer) throw new Error('Customer not found');
+
     await this.usersRepo.update(customerId, {
       surveyStatus: 'ASSIGNED',
       assignedSurveyTeam: team.name,
       teamName: team.name,
     });
+
+    // Create DRAFT survey if not exists
+    let survey = await this.surveyRepo.findOne({ where: { customerId } });
+    if (!survey) {
+        // Find surveyorId: use teamLeadId if available
+        const surveyorId = team.teamLeadId || null;
+
+        survey = this.surveyRepo.create({
+            customerId: customer.id,
+            customerEmail: customer.email,
+            status: 'DRAFT',
+            surveyorId: surveyorId
+        });
+        await this.surveyRepo.save(survey);
+    }
 
     // Log Audit
     await this.auditService.log(
@@ -278,10 +298,11 @@ export class CustomerService {
         u."installationStatus" AS "user_installationStatus",
         u."surveyStatus" AS "user_surveyStatus",
         u."createdAt" AS "user_createdAt",
+        s.id AS "survey_id",
         q.id AS "latestQuotationId",
         q.status AS "latestQuotationStatus"
       FROM users u
-      LEFT JOIN surveys s ON s."customerEmail" = u.email
+      LEFT JOIN surveys s ON s."customerEmail" = u.email OR s."customerId" = u.id::text
       LEFT JOIN quotations q ON q."surveyId" = s.id
       WHERE u.role = $1 AND u."isOnboarded" = $2
     `;
@@ -314,8 +335,8 @@ export class CustomerService {
       installationStatus: item.user_installationStatus,
       surveyStatus: item.user_surveyStatus,
       createdAt: item.user_createdAt,
-      latestQuotationStatus: item.latestQuotationStatus,
-      latestQuotationId: item.latestQuotationId
+      latestQuotationId: item.latestQuotationId,
+      surveys: item.survey_id ? [{ id: item.survey_id }] : []
     }));
   }
 
@@ -332,9 +353,10 @@ export class CustomerService {
         u.pincode AS user_pincode,
         u."installationStatus" AS "user_installationStatus",
         u."surveyStatus" AS "user_surveyStatus",
+        s.id AS "survey_id",
         q.status AS "latestQuotationStatus"
       FROM users u
-      LEFT JOIN surveys s ON s."customerEmail" = u.email
+      LEFT JOIN surveys s ON s."customerEmail" = u.email OR s."customerId" = u.id::text
       LEFT JOIN quotations q ON q."surveyId" = s.id
       WHERE u.role = $1
     `;
@@ -365,7 +387,8 @@ export class CustomerService {
       pincode: item.user_pincode,
       installationStatus: item.user_installationStatus,
       surveyStatus: item.user_surveyStatus,
-      latestQuotationStatus: item.latestQuotationStatus
+      latestQuotationStatus: item.latestQuotationStatus,
+      surveys: item.survey_id ? [{ id: item.survey_id }] : []
     }));
   }
 
