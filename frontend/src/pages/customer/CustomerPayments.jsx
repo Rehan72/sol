@@ -137,7 +137,7 @@ const CustomerPayments = () => {
                 name: "Survey Completion",
                 amount: Math.round(total * 0.25),
                 status: paidMilestones.includes('M1') ? "PAID" :
-                    (surveyStatus === 'COMPLETED' ? "DUE" : "LOCKED"),
+                    (['COMPLETED', 'APPROVED'].includes(surveyStatus) || installationStatus === 'QUOTATION_READY' ? "DUE" : "LOCKED"),
                 description: "Payment after successful site survey and quotation approval",
                 date: paidMilestones.includes('M1') ? formatDate(payments.find(p => p.milestoneId === 'M1')?.createdAt) : formatDate(baseDate)
             },

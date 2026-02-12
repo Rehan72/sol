@@ -331,7 +331,7 @@ function InstallationWorkflow() {
         if (!current || !current.dbId) return;
 
         try {
-            // await updateWorkflowStep(current.dbId, { status: 'completed' });
+            await updateWorkflowStep(current.dbId, { status: 'completed' });
             // Optimistic update
             setSteps(prev => prev.map(s => s.id === activeStepId ? { ...s, status: 'completed' } : s));
 
@@ -1093,7 +1093,7 @@ function InstallationWorkflow() {
                                                         {(useAuthStore.getState()?.role === 'INSTALLATION_TEAM' || useAuthStore.getState()?.role === 'SUPER_ADMIN' || useAuthStore.getState()?.role === 'EMPLOYEE') && (
                                                             <Button 
                                                                 onClick={handleRequestQC} 
-                                                                disabled={loading || steps.some(s => s.status !== 'completed')}
+                                                                disabled={loading || steps.filter(s => s.id !== 'inspection').some(s => s.status !== 'completed')}
                                                                 className="bg-purple-600 text-white hover:bg-purple-700 font-bold"
                                                             >
                                                                 {loading ? 'Requesting...' : 'Request QC'}

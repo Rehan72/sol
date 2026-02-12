@@ -170,7 +170,7 @@ export class CustomerService {
     const approvedQuotation = await this.quotationRepo.findOne({
       where: {
         survey: { customerEmail: user.email },
-        status: In(['PLANT_APPROVED', 'REGION_APPROVED', 'FINAL_APPROVED'])
+        status: In(['DRAFT', 'SUBMITTED', 'PLANT_APPROVED', 'REGION_APPROVED', 'FINAL_APPROVED'])
       },
       order: { createdAt: 'DESC' },
       relations: ['survey']

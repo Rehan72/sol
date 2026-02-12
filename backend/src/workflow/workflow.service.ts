@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkflowStep } from '../entities/workflow-step.entity';
@@ -68,7 +68,7 @@ export class WorkflowService {
 
     async updateStepStatus(stepId: string, status: string, userId: string, notes?: string, technicalData?: any) {
         const step = await this.stepRepo.findOne({ where: { id: stepId }, relations: ['customer'] });
-        if (!step) throw new Error('Step not found');
+        if (!step) throw new NotFoundException('Step not found');
 
         const oldStatus = step.status;
         step.status = status;
@@ -119,7 +119,7 @@ export class WorkflowService {
         if (nextPhase === 'INSTALLATION') {
             const user = await this.userRepo.findOne({ where: { id: customerId } });
             if (!user || user.surveyStatus !== 'APPROVED') {
-                throw new Error('Survey must be APPROVED before starting Installation.');
+                throw new BadRequestException('Survey must be APPROVED before starting Installation.');
             }
         }
 
@@ -250,7 +250,7 @@ export class WorkflowService {
 
     async assignInstallationTeam(customerId: string, teamId: string, adminId: string) {
         const user = await this.userRepo.findOne({ where: { id: customerId } });
-        if (!user) throw new Error('User not found');
+        if (!user) throw new NotFoundException('User not found');
         
         user.assignedInstallationTeam = teamId;
         user.installationStatus = 'TEAM_ASSIGNED';
@@ -268,19 +268,21 @@ export class WorkflowService {
     }
 
     async requestInstallationQC(customerId: string, userId: string) {
-        // Check if all installation steps are completed
+        // Check if all installation steps (except final inspection) are completed
         const steps = await this.stepRepo.find({ where: { customerId, phase: 'INSTALLATION' } });
-        const allStepsCompleted = steps.every(s => s.status === 'completed');
+        const installationWorkDone = steps.length > 0 && steps
+            .filter(s => s.stepId !== 'inspection')
+            .every(s => s.status === 'completed');
         
-        if (!allStepsCompleted) {
-            throw new Error('All installation steps must be completed before requesting QC.');
+        if (!installationWorkDone) {
+            throw new BadRequestException('All installation steps must be completed before requesting QC.');
         }
 
         const user = await this.userRepo.findOne({ where: { id: customerId } });
-        if (user) {
-            user.installationStatus = 'QC_PENDING';
-            await this.userRepo.save(user);
-        }
+        if (!user) throw new NotFoundException('User not found');
+        
+        user.installationStatus = 'QC_PENDING';
+        await this.userRepo.save(user);
         
          await this.auditService.log(
             userId,

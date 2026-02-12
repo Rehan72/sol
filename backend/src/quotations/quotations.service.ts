@@ -280,9 +280,10 @@ export class QuotationsService {
 
     async generateFromEstimation(estimationId: number) {
         const estimation = await this.costEstimationService.findOne(estimationId);
+
         if (!estimation) throw new NotFoundException('Cost estimation not found');
         if (estimation.status !== 'FINALIZED') throw new BadRequestException('Only finalized estimations can generate quotations');
-        if (estimation.quotationId) throw new BadRequestException('A quotation already exists for this estimation');
+        // if (estimation.quotationId) throw new BadRequestException('A quotation already exists for this estimation');
 
         // Map 9 BOQ stages → 6 quotation cost categories
         const costSolarModules = this.stageTotal(estimation.stagePanels);
@@ -307,8 +308,16 @@ export class QuotationsService {
         const annualSavings = annualGeneration * tariff;
         const paybackPeriod = annualSavings > 0 ? netProjectCost / annualSavings : 0;
 
-        const quotation = this.quotationRepository.create({
-            quotationNumber: `QT-${Date.now()}`,
+        let quotation = null;
+        if (estimation.surveyId) {
+            quotation = await this.quotationRepository.findOne({
+                where: { surveyId: estimation.surveyId }
+            });
+        }
+
+        const quotationData = {
+            quotationNumber: quotation ? quotation.quotationNumber : `QT-${Date.now()}`,
+            surveyId: estimation.surveyId,
             proposedSystemCapacity: finalKW,
             plantType: estimation.plantType || 'Grid-connected',
             costSolarModules,
@@ -332,8 +341,14 @@ export class QuotationsService {
             costEstimationId: estimation.id,
             status: 'DRAFT',
             currentApproverRole: Role.EMPLOYEE,
-            version: 1,
-        });
+            version: quotation ? quotation.version + 1 : 1,
+        };
+
+        if (quotation) {
+            Object.assign(quotation, quotationData);
+        } else {
+            quotation = this.quotationRepository.create(quotationData);
+        }
 
         const savedQuotation = await this.quotationRepository.save(quotation);
 

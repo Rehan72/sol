@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
+import { Survey } from './survey.entity';
 
 @Entity('cost_estimations')
 export class CostEstimation {
@@ -10,6 +11,13 @@ export class CostEstimation {
 
     @Column()
     projectName: string;
+
+    @Column({ type: 'int', nullable: true })
+    surveyId: number;
+
+    @ManyToOne(() => Survey)
+    @JoinColumn({ name: 'surveyId' })
+    survey: Survey;
 
     @Column({ type: 'float', default: 0 })
     systemCapacity: number; // kW

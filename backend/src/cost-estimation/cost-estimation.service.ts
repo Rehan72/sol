@@ -105,6 +105,7 @@ export class CostEstimationService {
 
         // 3. Populate Stages
         const est = new CostEstimation();
+        est.surveyId = survey.id;
         est.projectName = `Solar Project for ${survey.customerName || 'Customer'}`;
         est.systemCapacity = recommendedKw;
         est.plantType = survey.siteType || 'Rooftop';
@@ -179,6 +180,9 @@ export class CostEstimationService {
     }
 
     async linkToQuotation(id: number, quotationId: number): Promise<void> {
+        // Since there's a unique constraint on quotationId, we must unlink any other estimation first
+        await this.repo.update({ quotationId }, { quotationId: null });
+        // Now link the new one
         await this.repo.update(id, { quotationId });
     }
 
