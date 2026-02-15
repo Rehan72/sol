@@ -67,7 +67,7 @@ const SolarRequests = () => {
                 date: new Date(customer.createdAt).toLocaleDateString(),
                 // Mocking some fields for now as they might not exist in backend yet or need complex logic
                 feasibility: 'Pending',
-                surveyId: customer.surveys && customer.surveys.length > 0 ? customer.surveys[0].id : null, 
+                surveyId: customer.surveys && customer.surveys.length > 0 ? customer.surveys[0].id : null,
                 surveyStatus: customer.surveys && customer.surveys.length > 0 ? customer.surveys[0].status : null,
                 installationStatus: customer.installationStatus
             }));
@@ -150,10 +150,10 @@ const SolarRequests = () => {
         if (customer.latestQuotationStatus === 'DRAFT') return 'Quotation Drafted';
 
         // Survey/Onboarding Workflow
-         if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED' || customer.surveyStatus === 'COMPLETED') return 'Survey Completed';
+        if (customer.installationStatus === 'QUOTATION_READY' || customer.installationStatus === 'SURVEY_COMPLETED' || customer.surveyStatus === 'COMPLETED') return 'Survey Completed';
         if (customer.surveyStatus === 'APPROVED') return 'Survey Approved';
         if (customer.surveyStatus === 'REJECTED') return 'Survey Rejected';
-        
+
         if (customer.surveyStatus === 'ASSIGNED') return 'Survey Assigned';
         if (customer.installationStatus === 'ONBOARDED') return 'New Request';
 
@@ -280,8 +280,8 @@ const SolarRequests = () => {
 
     const handleApproveSurvey = async (lead) => {
         if (!lead.surveyId) {
-             addToast("Survey ID not found", 'error');
-             return;
+            addToast("Survey ID not found", 'error');
+            return;
         }
         try {
             await approveSurvey(lead.surveyId);
@@ -295,8 +295,8 @@ const SolarRequests = () => {
 
     const handleRejectSurvey = async (lead) => {
         if (!lead.surveyId) {
-             addToast("Survey ID not found", 'error');
-             return;
+            addToast("Survey ID not found", 'error');
+            return;
         }
         const reason = prompt("Enter rejection reason:");
         if (!reason) return;
@@ -304,7 +304,7 @@ const SolarRequests = () => {
         try {
             await rejectSurvey(lead.surveyId, reason);
             addToast("Survey Rejected!", 'info');
-             fetchLeads();
+            fetchLeads();
         } catch (error) {
             console.error(error);
             addToast("Failed to reject survey", 'error');
@@ -333,8 +333,8 @@ const SolarRequests = () => {
 
     const handleConductSurvey = (lead) => {
         if (!lead.surveyId) {
-             // Fallback if surveyId not present (should be created by backend now)
-             console.warn("No survey ID found for lead", lead);
+            // Fallback if surveyId not present (should be created by backend now)
+            console.warn("No survey ID found for lead", lead);
         }
         navigate('/surveys/create', { state: { customer: lead, surveyId: lead.surveyId } });
     };
@@ -404,7 +404,7 @@ const SolarRequests = () => {
                             className="glass p-6 rounded-[1rem] border border-white/5 hover:border-solar-yellow/30 transition-all group flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
                         >
                             {/* Left Hover Indicator */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
+                            <div className="absolute top-0 left-0 w-1 h-full bg-linear-to-b from-transparent via-solar-yellow/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="flex items-center gap-6">
                                 <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-white/40">
                                     {lead.name.charAt(0)}
@@ -435,8 +435,8 @@ const SolarRequests = () => {
                                                                 lead.status === 'QC Pending' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
                                                                     lead.status === 'QC Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                                                                         lead.status === 'QC Rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                                                        ['Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
-                                                                            'bg-white/10 text-white/60'
+                                                                            ['Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                                                                                'bg-white/10 text-white/60'
                                         }`}>
                                         {lead.status}
                                     </span>
@@ -454,8 +454,8 @@ const SolarRequests = () => {
                                         onClick={() => handleAction(lead)}
                                         className={`min-w-[140px] border border-white/10 text-white ${lead.status === 'New Request' ? 'bg-solar-yellow text-deep-navy hover:bg-gold font-bold border-none' :
                                             lead.status === 'Survey Completed' ? 'bg-indigo-600 hover:bg-indigo-700 font-bold border-none' :
-                                            ['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-none' :
-                                                'bg-white/5 hover:bg-white/10'
+                                                ['Payment Received', 'Installation Scheduled', 'Installation Started', 'QC Pending', 'QC Approved', 'QC Rejected', 'Installation Completed', 'Commissioning', 'COMMISSIONING'].includes(lead.status) ? 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-none' :
+                                                    'bg-white/5 hover:bg-white/10'
                                             }`}
                                         disabled={false}
                                     >
@@ -484,10 +484,10 @@ const SolarRequests = () => {
                                     )}
                                     {/* Survey Approval Actions */}
                                     {lead.status === 'Survey Completed' && (useAuthStore.getState()?.role === 'REGION_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
-                                         <div className="flex gap-2">
+                                        <div className="flex gap-2">
                                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleRejectSurvey(lead); }} className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/40">Reject</Button>
                                             <Button size="sm" onClick={(e) => { e.stopPropagation(); handleApproveSurvey(lead); }} className="bg-emerald-500 text-white hover:bg-emerald-600">Approve Survey</Button>
-                                         </div>
+                                        </div>
                                     )}
 
                                     {/* Plant Admin: Generate Cost Estimation for Completed/Approved Surveys */}
@@ -502,12 +502,12 @@ const SolarRequests = () => {
 
 
 
-                                     {/* Create Quote - Only if Survey is Approved */}
-                                     {lead.status === 'Survey Approved' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
-                                          <Button onClick={() => handleAction(lead)} className="bg-indigo-600 hover:bg-indigo-700 font-bold border-none">
-                                             <Wallet className="w-4 h-4 mr-2" /> Create Quote
-                                          </Button>
-                                     )}
+                                    {/* Create Quote - Only if Survey is Approved */}
+                                    {lead.status === 'Survey Approved' && (useAuthStore.getState()?.role === 'PLANT_ADMIN' || useAuthStore.getState()?.role === 'SUPER_ADMIN') && (
+                                        <Button onClick={() => handleAction(lead)} className="bg-indigo-600 hover:bg-indigo-700 font-bold border-none">
+                                            <Wallet className="w-4 h-4 mr-2" /> Create Quote
+                                        </Button>
+                                    )}
 
 
 
@@ -712,14 +712,14 @@ const SolarRequests = () => {
                     {modalType === 'assign_installation' && (
                         <div className="fixed inset-0 z-100 flex items-start justify-center p-4 overflow-y-auto py-12">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={closeModal} />
-                            <motion.div 
-                                initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-                                animate={{ scale: 1, opacity: 1, y: 0 }} 
-                                exit={{ scale: 0.9, opacity: 0, y: 20 }} 
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
                                 className="relative bg-deep-navy/90 md:bg-deep-navy/40 backdrop-blur-2xl border border-white/10 p-10 md:p-12 rounded-[2.5rem] w-full max-w-xl shadow-[0_0_80px_rgba(0,0,0,0.6)] z-10 group/modal"
                             >
                                 <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 blur-[80px] rounded-full -mr-20 -mt-20 group-hover/modal:bg-blue-500/10 transition-all duration-700" />
-                                
+
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-4 mb-10">
                                         <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -750,7 +750,9 @@ const SolarRequests = () => {
 
                                         {/* Information Grid */}
                                         <div className="grid grid-cols-1 gap-6">
-                                            <div className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:bg-white/10 transition-colors">
+                                            <div className="group relative p-5 border border-white/10 rounded-2xl bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.05] transition-all cursor-pointer hover:border-solar-yellow/20 overflow-hidden">
+                                                {/* Left Hover Indicator */}
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-linear-to-b from-transparent via-solar-yellow/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 <label className="text-[9px] font-black uppercase text-white/20 mb-3 block tracking-widest">Designated Customer</label>
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-[0.75rem] bg-white/5 flex items-center justify-center border border-white/5 font-black text-white/40">
@@ -793,15 +795,15 @@ const SolarRequests = () => {
                                     </div>
 
                                     <div className="flex flex-col sm:flex-row gap-4">
-                                        <Button 
-                                            variant="ghost" 
-                                            onClick={closeModal} 
+                                        <Button
+                                            variant="ghost"
+                                            onClick={closeModal}
                                             className="flex-1 py-7 rounded-2xl text-white/30 hover:text-white uppercase font-black tracking-[0.2em] text-[10px] border border-transparent hover:border-white/5 transition-all"
                                         >
                                             Abort Protocol
                                         </Button>
-                                        <Button 
-                                            onClick={handleAssignInstallation} 
+                                        <Button
+                                            onClick={handleAssignInstallation}
                                             className="flex-1 bg-linear-to-r from-blue-500 to-blue-600 text-white font-black py-7 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-[10px] shadow-[0_15px_30px_rgba(59,130,246,0.3)]"
                                         >
                                             Authorize Mission <ArrowRight className="w-4 h-4 ml-2" />

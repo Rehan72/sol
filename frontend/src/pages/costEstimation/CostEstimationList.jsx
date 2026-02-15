@@ -112,8 +112,10 @@ const CostEstimationList = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               onClick={() => navigate(`/cost-estimation/${est.id}`)}
-              className="group relative p-5 border border-white/10 rounded-2xl bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.05] transition-all cursor-pointer hover:border-solar-yellow/20"
+              className="group relative p-5 border border-white/10 rounded-2xl bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.05] transition-all cursor-pointer hover:border-solar-yellow/20 overflow-hidden"
             >
+              {/* Left Hover Indicator */}
+              <div className="absolute top-0 left-0 w-1 h-full bg-linear-to-b from-transparent via-solar-yellow/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-solar-yellow/20 to-solar-gold/10 flex items-center justify-center border border-solar-yellow/10">
@@ -122,11 +124,10 @@ const CostEstimationList = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="text-base font-bold text-white">{est.projectName || 'Untitled Project'}</h3>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                        est.status === 'FINALIZED'
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${est.status === 'FINALIZED'
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : 'bg-white/5 text-white/40 border-white/10'
-                      }`}>
+                        }`}>
                         {est.status === 'FINALIZED' ? <span className="flex items-center gap-1"><CheckCircle size={10} /> Finalized</span> : 'Draft'}
                       </span>
                     </div>

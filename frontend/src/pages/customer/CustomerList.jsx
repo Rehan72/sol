@@ -44,26 +44,26 @@ const CustomerList = () => {
 
     const getStatusColor = (status, type) => {
         if (!status) return 'border-white/10 text-white/40 bg-white/5';
-        
+
         const s = status.toUpperCase();
-        
-        switch(type) {
+
+        switch (type) {
             case 'survey':
                 if (s === 'COMPLETED') return 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.1)]';
                 if (s === 'ASSIGNED' || s === 'IN_PROGRESS') return 'border-solar-yellow/50 text-solar-yellow bg-solar-yellow/10';
                 return 'border-white/10 text-white/40 bg-white/5';
-            
+
             case 'quotation':
                 if (['PLANT_APPROVED', 'REGION_APPROVED', 'FINAL_APPROVED'].includes(s)) return 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.1)]';
                 if (['SUBMITTED', 'PENDING'].includes(s)) return 'border-solar-yellow/50 text-solar-yellow bg-solar-yellow/10';
                 if (s === 'REJECTED') return 'border-red-500/50 text-red-400 bg-red-500/10';
                 return 'border-white/10 text-white/40 bg-white/5';
-            
+
             case 'installation':
                 if (s === 'COMPLETED' || s === 'LIVE') return 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
                 if (['INSTALLATION_STARTED', 'INSTALLATION_SCHEDULED', 'INSTALLATION_READY', 'COMMISSIONING'].includes(s)) return 'border-solar-yellow/50 text-solar-yellow bg-solar-yellow/10';
                 return 'border-white/10 text-white/40 bg-white/5';
-                
+
             default:
                 return 'border-white/10 text-white/40 bg-white/5';
         }
@@ -79,7 +79,7 @@ const CustomerList = () => {
 
             {/* --- Premium Header Area --- */}
             <div className="relative z-10 px-6 md:px-12 py-8 mx-auto w-full">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-4">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-8 h-[2px] bg-solar-yellow rounded-full" />
@@ -110,12 +110,12 @@ const CustomerList = () => {
                             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                             <span className="text-[10px]">Add New Customer</span>
                         </Button> */}
-                         <Button
-                                                    onClick={() => navigate('/customer/create')}
-                                                    className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
-                                                >
-                                                    <Plus className="w-5 h-5" /> New Customer
-                                                </Button>
+                        <Button
+                            onClick={() => navigate('/customer/create')}
+                            className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+                        >
+                            <Plus className="w-5 h-5" /> New Customer
+                        </Button>
                     </div>
                 </div>
 
@@ -146,8 +146,8 @@ const CustomerList = () => {
                             >
                                 <div className="glass p-8 rounded-[1rem] border border-white/5 hover:border-solar-yellow/20 hover:bg-white/10 transition-all duration-500 cursor-default flex flex-col xl:flex-row items-center justify-between gap-10 overflow-hidden">
                                     {/* Left Hover Indicator */}
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-solar-yellow scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-center rounded-r-full shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
-                                    
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-solar-yellow/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
                                     {/* Brand/Avatar Block */}
                                     <div className="flex items-center gap-8 flex-1 min-w-0 w-full">
                                         <div className="w-16 h-16 rounded-[1.25rem] bg-linear-to-br from-solar-yellow/20 to-transparent flex items-center justify-center border-2 border-solar-yellow shadow-[0_0_20px_rgba(255,215,0,0.05)] shrink-0 group-hover:rotate-3 transition-transform">
@@ -156,8 +156,8 @@ const CustomerList = () => {
                                             </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                                                <h3 className="font-black text-3xl text-white tracking-tighter uppercase truncate leading-none">
+                                            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 mb-4">
+                                                <h3 className="font-black text-4xl text-white tracking-tighter uppercase leading-none">
                                                     {customer.name || 'Anonymous User'}
                                                 </h3>
                                                 <div className="flex flex-wrap gap-2">
@@ -174,11 +174,11 @@ const CustomerList = () => {
                                             </div>
                                             <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-[10px] text-white/30 font-black uppercase tracking-widest">
                                                 <div className="flex items-center gap-2.5 group/item">
-                                                    <Mail className="w-4 h-4 text-solar-yellow/40 group-hover/item:text-solar-yellow transition-colors" /> 
+                                                    <Mail className="w-4 h-4 text-solar-yellow/40 group-hover/item:text-solar-yellow transition-colors" />
                                                     <span className="group-hover/item:text-white/60 transition-colors">{customer.email || 'NOT REGISTERED'}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2.5 group/item">
-                                                    <Phone className="w-4 h-4 text-solar-yellow/40 group-hover/item:text-solar-yellow transition-colors" /> 
+                                                    <Phone className="w-4 h-4 text-solar-yellow/40 group-hover/item:text-solar-yellow transition-colors" />
                                                     <span className="group-hover/item:text-white/60 transition-colors">{customer.phone || 'NOT REGISTERED'}</span>
                                                 </div>
                                             </div>
@@ -186,12 +186,12 @@ const CustomerList = () => {
                                     </div>
 
                                     {/* Location Details Block */}
-                                    <div className="flex xl:flex-col items-center xl:items-end gap-8 xl:gap-4 py-6 xl:py-2 px-10 xl:px-14 border-y xl:border-y-0 xl:border-l border-white/5 w-full xl:w-auto bg-white/5 xl:bg-transparent rounded-2xl">
-                                        <div className="flex items-start gap-4">
+                                    <div className="flex xl:flex-col items-center xl:items-start gap-8 xl:gap-4 py-6 xl:py-2 px-10 xl:px-14 border-y xl:border-y-0 xl:border-l border-white/5 w-full xl:w-auto bg-white/5 xl:bg-transparent rounded-2xl">
+                                        <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
                                                 <MapPin className="w-5 h-5 text-solar-yellow opacity-60" />
                                             </div>
-                                            <div className="text-right xl:text-left flex-1 min-w-[120px]">
+                                            <div className="text-left flex-1 min-w-[120px]">
                                                 <p className="text-white font-black text-lg uppercase tracking-tight leading-none mb-1">
                                                     {customer.city || 'Global'}
                                                 </p>
@@ -211,8 +211,8 @@ const CustomerList = () => {
                                             <div className="text-[8px] text-white/20 uppercase font-black tracking-[0.25em] whitespace-nowrap">Asset Count</div>
                                         </div>
 
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             className="bg-white/5 border-white/10 hover:border-solar-yellow text-white/40 hover:text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-2xl transition-all flex items-center gap-2 h-auto group/btn shadow-inner hover:bg-solar-yellow/5"
                                         >
                                             View Profile <MoreVertical className="w-3.5 h-3.5 opacity-30 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all" />
