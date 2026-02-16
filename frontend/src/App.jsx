@@ -12,6 +12,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { LoadingProvider } from "./context/LoadingContext";
 import GlobalLoader from "./components/ui/GlobalLoader";
 import NotificationManager from './components/Layout/NotificationManager';
+import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +29,7 @@ const App = () => {
               <Preloader key="preloader" onComplete={() => setIsLoading(false)} />
             ) : (
               <Router>
+                <ScrollToTop />
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />

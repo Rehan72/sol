@@ -183,17 +183,6 @@ function PlantAdminList() {
     },
   ]
 
-  if (loading) {
-    return (
-      <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden flex items-center justify-center">
-        <div className="film-grain" />
-        <div className="cinematic-vignette" />
-        <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, #000033 0%, #001f3f 40%, #003366 80%, #001f3f 100%)' }} />
-        <Loader2 className="w-8 h-8 animate-spin text-solar-yellow" />
-      </div>
-    );
-  }
-
   return (
     <div className="relative min-h-screen bg-deep-navy text-white overflow-hidden">
       {/* Cinematic Overlays */}
@@ -225,7 +214,7 @@ function PlantAdminList() {
               </h1>
             </div>
 
-            <Button
+            {/* <Button
               onClick={() => navigate('/plant-admin/create')}
               variant="default"
               size="lg"
@@ -233,6 +222,13 @@ function PlantAdminList() {
             >
               <Plus className="w-5 h-5" />
               Add Plant Admin
+            </Button> */}
+
+            <Button
+              onClick={() => navigate('/plant-admin/create')}
+              className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+            >
+              <Plus className="w-5 h-5" /> New Plant Admin
             </Button>
           </div>
         </motion.div>

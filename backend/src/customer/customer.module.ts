@@ -7,11 +7,12 @@ import { Plant } from '../entities/plant.entity';
 import { Team } from '../entities/team.entity';
 import { Survey } from '../entities/survey.entity';
 import { Quotation } from '../entities/quotation.entity';
+import { Notification } from '../entities/notification.entity';
 
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Plant, Team, Quotation, Survey]), AuditModule],
+  imports: [TypeOrmModule.forFeature([User, Plant, Team, Quotation, Survey, Notification]), AuditModule],
   controllers: [CustomerController],
   providers: [CustomerService],
 })

@@ -6,6 +6,7 @@ import { Plant } from '../entities/plant.entity';
 import { Team } from '../entities/team.entity';
 import { Survey } from '../entities/survey.entity';
 import { Quotation } from '../entities/quotation.entity';
+import { Notification } from '../entities/notification.entity';
 import { CustomerOnboardingDto } from '../auth/dto/customerOnborading.dto';
 import { Role } from '../common/enums/role.enum';
 import { AuditService } from '../audit/audit.service';
@@ -20,6 +21,7 @@ export class CustomerService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
     @InjectRepository(Survey) private surveyRepo: Repository<Survey>,
+    @InjectRepository(Notification) private notificationRepo: Repository<Notification>,
     private auditService: AuditService,
     private notificationsService: NotificationsService
   ) { }
@@ -366,6 +368,7 @@ export class CustomerService {
         u.pincode AS user_pincode,
         u."installationStatus" AS "user_installationStatus",
         u."surveyStatus" AS "user_surveyStatus",
+        u."createdAt" AS "user_createdAt",
         s.id AS "survey_id",
         q.status AS "latestQuotationStatus"
       FROM users u
@@ -400,6 +403,7 @@ export class CustomerService {
       pincode: item.user_pincode,
       installationStatus: item.user_installationStatus,
       surveyStatus: item.user_surveyStatus,
+      createdAt: item.user_createdAt,
       latestQuotationStatus: item.latestQuotationStatus,
       surveys: item.survey_id ? [{ id: item.survey_id }] : []
     }));

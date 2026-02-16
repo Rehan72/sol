@@ -319,12 +319,9 @@ function RegionAdminList() {
 
             <Button
               onClick={() => navigate('/region-admin/create')}
-              variant="default"
-              size="lg"
-              className="hover:scale-105 transition-transform font-black px-8 py-6 rounded-full text-sm shadow-[0_0_30px_rgba(255,215,0,0.3)] flex items-center gap-3"
+              className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
             >
-              <Plus className="w-5 h-5" />
-              ADD REGION ADMIN
+              <Plus className="w-5 h-5" /> New Region Admin
             </Button>
           </div>
         </motion.div>

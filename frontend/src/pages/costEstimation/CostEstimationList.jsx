@@ -7,6 +7,7 @@ import {
   FileText, CheckCircle, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from '../../components/ui/button';
 
 const CostEstimationList = () => {
   const navigate = useNavigate();
@@ -47,15 +48,6 @@ const CostEstimationList = () => {
     est.estimationNumber?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-10 text-white min-h-[50vh]">
-        <Loader2 className="mb-4 animate-spin text-solar-yellow" size={32} />
-        <span className="text-sm text-white/40 uppercase tracking-widest font-bold">Loading Estimations...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="relative p-6 text-white overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto">
@@ -70,12 +62,19 @@ const CostEstimationList = () => {
               BOQ Templates — Solar Installation Projects
             </p>
           </div>
-          <button
+          {/* <button
             onClick={() => navigate('/cost-estimation/create')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-solar-yellow text-deep-navy text-sm font-bold hover:bg-solar-gold transition-all shadow-[0_0_20px_rgba(255,215,0,0.2)]"
           >
             <Plus size={16} /> New Estimation
-          </button>
+          </button> */}
+
+          <Button
+            onClick={() => navigate('/cost-estimation/create')}
+            className="bg-solar-yellow text-deep-navy font-bold hover:bg-gold flex items-center gap-2 px-6"
+          >
+            <Plus className="w-5 h-5" /> New Estimation
+          </Button>
         </div>
 
         {/* Search */}
