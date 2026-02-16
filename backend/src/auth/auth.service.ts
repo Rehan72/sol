@@ -104,7 +104,7 @@ export class AuthService {
     try {
         await this.notifications.send(
             newCustomer.id,
-            'Welcome to TekMindz! ☀️',
+            'Welcome to SOLARMAX! ☀️',
             `Hi ${newCustomer.name}, welcome to your solar journey. Please complete your profile setup.`,
             NotificationType.SUCCESS
         );

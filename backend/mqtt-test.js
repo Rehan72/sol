@@ -7,8 +7,8 @@ client.on('connect', () => {
     console.log('Test Client Connected');
     
     // Subscribe to commands
-    client.subscribe(`tekmindz/solar/${plantId}/command`, (err) => {
-        if (!err) console.log(`Subscribed to tekmindz/solar/${plantId}/command`);
+    client.subscribe(`SOLARMAX/solar/${plantId}/command`, (err) => {
+        if (!err) console.log(`Subscribed to SOLARMAX/solar/${plantId}/command`);
     });
 
     // Publish telemetry every 5 seconds
@@ -20,7 +20,7 @@ client.on('connect', () => {
             moduleTemp: 35,
             irradiance: 800
         };
-        client.publish(`tekmindz/solar/${plantId}/telemetry`, JSON.stringify(telemetry));
+        client.publish(`SOLARMAX/solar/${plantId}/telemetry`, JSON.stringify(telemetry));
         console.log('Published telemetry:', telemetry);
     }, 5000);
 });

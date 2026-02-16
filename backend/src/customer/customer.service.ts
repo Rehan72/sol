@@ -9,6 +9,8 @@ import { Quotation } from '../entities/quotation.entity';
 import { CustomerOnboardingDto } from '../auth/dto/customerOnborading.dto';
 import { Role } from '../common/enums/role.enum';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../entities/notification.entity';
 
 @Injectable()
 export class CustomerService {
@@ -18,8 +20,10 @@ export class CustomerService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
     @InjectRepository(Survey) private surveyRepo: Repository<Survey>,
-    private auditService: AuditService
+    private auditService: AuditService,
+    private notificationsService: NotificationsService
   ) { }
+
 
   // Haversine formula to calculate distance in km
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -281,6 +285,15 @@ export class CustomerService {
       }
     );
 
+    // Send Notification
+    await this.notificationsService.send(
+        customerId,
+        'Survey Team Assigned 👷',
+        `Good news! A survey team (${team.name}) has been assigned to your project. They will contact you shortly.`,
+        NotificationType.INFO,
+        [NotificationChannel.SYSTEM]
+    );
+
     return { message: 'Survey team assigned successfully', teamName: team.name };
   }
 
@@ -418,6 +431,15 @@ export class CustomerService {
       }
     );
 
+    // Send Notification
+    await this.notificationsService.send(
+        customerId,
+        'Installation Team Assigned 🛠️',
+        `Get ready! Your installation team (${team.name}) has been assigned. Tentative Start Date: ${startDate || 'ASAP'}.`,
+        NotificationType.SUCCESS,
+        [NotificationChannel.SYSTEM]
+    );
+
     return { 
       message: 'Installation team assigned successfully', 
       teamName: team.name,
@@ -441,6 +463,15 @@ export class CustomerService {
     await this.usersRepo.update(customerId, {
       installationStatus: status,
     });
+
+    // Send Notification for explicit status updates
+    await this.notificationsService.send(
+        customerId,
+        'Installation Update 📢',
+        `Your installation status has been updated to: ${status.replace(/_/g, ' ')}.`,
+        NotificationType.INFO,
+        [NotificationChannel.SYSTEM]
+    );
 
     return { message: 'Installation status updated', status };
   }

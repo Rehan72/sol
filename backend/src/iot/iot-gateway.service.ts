@@ -7,7 +7,7 @@ export class IotGatewayService implements OnModuleInit {
   private client: mqtt.MqttClient;
   private readonly logger = new Logger(IotGatewayService.name);
   private readonly brokerUrl = 'mqtt://broker.hivemq.com'; // Fallback public broker
-  private readonly topics = ['tekmindz/solar/+/telemetry', 'tekmindz/solar/+/alert'];
+  private readonly topics = ['SOLARMAX/solar/+/telemetry', 'SOLARMAX/solar/+/alert'];
 
   constructor(private readonly monitoringService: MonitoringService) {}
 
@@ -47,7 +47,7 @@ export class IotGatewayService implements OnModuleInit {
     this.logger.debug(`Received [${topic}]: ${payload}`);
     
     // Parse topic to get device ID
-    // Topic format: tekmindz/solar/{deviceId}/{type}
+    // Topic format: SOLARMAX/solar/{deviceId}/{type}
     const parts = topic.split('/');
     if (parts.length === 4) {
         const deviceId = parts[2];
@@ -76,7 +76,7 @@ export class IotGatewayService implements OnModuleInit {
   }
 
   public publishCommand(deviceId: string, command: string, payload: any) {
-    const topic = `tekmindz/solar/${deviceId}/command`;
+    const topic = `SOLARMAX/solar/${deviceId}/command`;
     this.client.publish(topic, JSON.stringify({ command, payload, timestamp: new Date() }), (err) => {
        if (err) {
            this.logger.error(`Failed to publish command to ${topic}`);

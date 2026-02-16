@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { Activity, useEffect, useState } from 'react';
+import {motion} from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuotationById, generateQuotationPdf, submitQuotation, approveQuotation, rejectQuotation } from '../../api/quotations';
 import { analyzeFinancials, getEnvironmentalImpact } from '../../api/financials';

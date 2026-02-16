@@ -143,10 +143,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                   e.stopPropagation();
                   setActiveCategoryId(cat.id);
                 }}
-                className={`relative w-full flex flex-col items-center py-4 transition-all duration-300 group cursor-pointer ${isActive ? 'text-solar-yellow' : 'text-white/40 hover:text-white/80'}`}
+                className={`relative w-full flex flex-col items-center py-4 transition-all duration-300 group cursor-pointer ${isActive ? 'text-solar-yellow' : 'text-gray-300 hover:text-white'}`}
               >
                 <cat.icon className={`w-5 h-5 mb-1 ${isActive ? 'scale-110' : 'scale-100 group-hover:scale-110'} transition-transform`} />
-                <span className={`text-[8px] font-black tracking-tighter uppercase transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
+                <span className={`text-[9px] font-black tracking-tighter uppercase transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}>
                   {cat.name}
                 </span>
 
@@ -193,11 +193,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                         to={item.path}
                         className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl mb-1 transition-all duration-300 ${isActive
                           ? 'bg-white/5 text-solar-yellow border border-white/10 ring-1 ring-white/5'
-                          : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                          : 'text-gray-300 hover:text-white hover:bg-white/10 border border-transparent'
                           }`}
                       >
-                        <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-solar-yellow' : 'text-white/40 group-hover:text-solar-yellow/60'}`} />
-                        <span className="text-[9px] font-bold tracking-widest uppercase truncate">{item.name}</span>
+                        <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-solar-yellow' : 'text-gray-400 group-hover:text-solar-yellow/80'}`} />
+                        <span className="text-[10px] font-bold tracking-widest uppercase truncate">{item.name}</span>
 
                         {isActive && (
                           <motion.div

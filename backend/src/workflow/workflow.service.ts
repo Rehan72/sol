@@ -265,7 +265,16 @@ export class WorkflowService {
             { notes: 'Installation marked as completed' }
         );
 
-        return { success: true, message: 'Installation marked as completed' };
+        // Send Notification
+    await this.notificationsService.send(
+        customerId,
+        'Installation Completed! 🚩',
+        'Great job! The installation phase is complete. We are now preparing for commissioning.',
+        NotificationType.SUCCESS,
+        [NotificationChannel.SYSTEM]
+    );
+
+    return { success: true, message: 'Installation marked as completed' };
     }
 
     async assignInstallationTeam(customerId: string, teamId: string, adminId: string) {
@@ -332,7 +341,16 @@ export class WorkflowService {
             { notes: 'Installation QC Approved' }
         );
 
-        return { success: true, message: 'QC Approved' };
+        // Send Notification
+    await this.notificationsService.send(
+        customerId,
+        'QC Approved! ✅',
+        'Your solar installation has passed the Quality Check. We are now ready for grid synchronization.',
+        NotificationType.SUCCESS,
+        [NotificationChannel.SYSTEM]
+    );
+
+    return { success: true, message: 'QC Approved' };
     }
 
     async rejectInstallationQC(customerId: string, adminId: string, reason: string) {
@@ -351,6 +369,15 @@ export class WorkflowService {
             { notes: `Installation QC Rejected: ${reason}` }
         );
 
-        return { success: true, message: 'QC Rejected' };
+        // Send Notification
+    await this.notificationsService.send(
+        customerId,
+        'QC Rejected ⚠️',
+        `Your installation QC was rejected. Reason: ${reason}. Our team will address the issues shortly.`,
+        NotificationType.WARNING,
+        [NotificationChannel.SYSTEM]
+    );
+
+    return { success: true, message: 'QC Rejected' };
     }
 }
