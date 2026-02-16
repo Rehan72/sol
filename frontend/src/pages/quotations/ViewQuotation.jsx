@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuotationById, generateQuotationPdf, submitQuotation, approveQuotation, rejectQuotation } from '../../api/quotations';
-import { Download, CheckCircle, ArrowLeft, Printer, Loader2, Send, XCircle, FileText } from 'lucide-react';
+import { analyzeFinancials, getEnvironmentalImpact } from '../../api/financials';
+import { 
+  Download, CheckCircle, ArrowLeft, Printer, Loader2, Send, XCircle, FileText,
+  TrendingUp, Leaf, BarChart3, CloudRain, TreePine, Droplets, ArrowUpRight
+} from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { useAuthStore } from '../../store/authStore';
 
@@ -16,14 +20,26 @@ const ViewQuotation = () => {
     const [remarks, setRemarks] = useState('');
     const { addToast } = useToast();
 
+    const [financials, setFinancials] = useState(null);
+    const [envImpact, setEnvImpact] = useState(null);
+
     useEffect(() => {
         const fetchQuotation = async () => {
             try {
                 const data = await getQuotationById(id);
                 setQuotation(data);
+                
+                // Fetch Financial Intelligence
+                if (data.proposedSystemCapacity && data.netProjectCost) {
+                    const finData = await analyzeFinancials(data.proposedSystemCapacity, data.netProjectCost, data.electricityTariff || 8);
+                    setFinancials(finData);
+                    
+                    const envData = await getEnvironmentalImpact(data.proposedSystemCapacity);
+                    setEnvImpact(envData);
+                }
             } catch (error) {
                 console.error(error);
-                addToast('Failed to load quotation', 'error');
+                addToast('Failed to load quotation or analytics', 'error');
             } finally {
                 setLoading(false);
             }
@@ -221,7 +237,7 @@ const ViewQuotation = () => {
                         <h3 className="mb-4 text-lg font-semibold text-white">Financial Breakdown</h3>
                         <div className="overflow-hidden border border-white/10 rounded-lg">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-white/5 text-(--color-solar-light-gray)">
+                                <thead className="bg-white/5 text-[--color-solar-light-gray]">
                                     <tr>
                                         <th className="p-3">Item</th>
                                         <th className="p-3 text-right">Cost (₹)</th>
@@ -233,9 +249,9 @@ const ViewQuotation = () => {
                                     <tr><td className="p-3">Structure & Hardware</td><td className="p-3 text-right">{quotation.costStructure?.toLocaleString()}</td></tr>
                                     <tr><td className="p-3">Balance of System</td><td className="p-3 text-right">{quotation.costBOS?.toLocaleString()}</td></tr>
                                     <tr><td className="p-3">Installation</td><td className="p-3 text-right">{quotation.costInstallation?.toLocaleString()}</td></tr>
-                                    <tr className="bg-(--color-solar-yellow)/10">
+                                    <tr className="bg-solar-yellow/10">
                                         <td className="p-3 font-bold text-white">Total Cost</td>
-                                        <td className="p-3 text-right font-bold text-(--color-solar-yellow)">{quotation.totalProjectCost?.toLocaleString()}</td>
+                                        <td className="p-3 text-right font-bold text-[--color-solar-yellow]">{quotation.totalProjectCost?.toLocaleString()}</td>
                                     </tr>
                                     <tr><td className="p-3 text-green-400">Est. Subsidy</td><td className="p-3 text-right text-green-400">-{quotation.governmentSubsidy?.toLocaleString()}</td></tr>
                                     <tr className="bg-green-500/10 border-t border-green-500/20">
@@ -246,6 +262,83 @@ const ViewQuotation = () => {
                             </table>
                         </div>
                     </div>
+
+                    {/* NEW: Financial Intelligence Section */}
+                    {financials && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <motion.div 
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          className="glass p-8 rounded-[2rem] border border-white/10 relative overflow-hidden"
+                        >
+                          <div className="flex items-center gap-3 mb-6">
+                            <TrendingUp className="text-solar-yellow w-6 h-6" />
+                            <h3 className="text-xl font-bold tracking-tighter uppercase italic">Financial Intelligence</h3>
+                          </div>
+                          
+                          <div className="space-y-6">
+                            <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                              <div>
+                                <p className="text-[10px] font-black tracking-widest uppercase text-white/40">Expected IRR</p>
+                                <p className="text-3xl font-black text-solar-yellow tracking-tighter">{financials.irr}%</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] font-black tracking-widest uppercase text-white/40">Total 25Y Savings</p>
+                                <p className="text-3xl font-black text-white tracking-tighter">₹{financials.savings25Years?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-[10px] font-bold uppercase text-white/20 mb-1">Payback Period</p>
+                                <p className="text-xl font-bold">{financials.paybackPeriodYears} Years</p>
+                              </div>
+                              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-[10px] font-bold uppercase text-white/20 mb-1">Annual ROI</p>
+                                <p className="text-xl font-bold">{financials.roi}%</p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-white/20 italic tracking-wider">
+                              * Calculations based on 5% annual tariff hike escalation index.
+                            </p>
+                          </div>
+                        </motion.div>
+
+                        <motion.div 
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          className="glass p-8 rounded-[2rem] border border-white/10 relative overflow-hidden group"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700" />
+                          <div className="flex items-center gap-3 mb-6">
+                            <Leaf className="text-emerald-400 w-6 h-6" />
+                            <h3 className="text-xl font-bold tracking-tighter uppercase italic">Environmental Impact</h3>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2 p-6 bg-emerald-500/5 rounded-3xl border border-emerald-500/10 flex items-center justify-between">
+                              <div>
+                                <p className="text-[10px] font-black tracking-widest uppercase text-emerald-400/60 mb-1">CO₂ Reduction</p>
+                                <p className="text-4xl font-black text-white tracking-tighter">{envImpact?.annualCo2SavedKg?.toLocaleString()} <span className="text-lg">kg/year</span></p>
+                              </div>
+                              <CloudRain className="w-12 h-12 text-emerald-400/20" />
+                            </div>
+                            
+                            <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
+                                <TreePine className="text-emerald-400 w-8 h-8 mb-4 opacity-40" />
+                                <p className="text-[10px] font-black tracking-widest uppercase text-white/40 mb-1">Equivalent Trees</p>
+                                <p className="text-2xl font-black text-white">{envImpact?.treesEquivalent} Trees</p>
+                            </div>
+
+                            <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
+                                <Activity className="text-solar-yellow w-8 h-8 mb-4 opacity-40" />
+                                <p className="text-[10px] font-black tracking-widest uppercase text-white/40 mb-1">Coal Saved</p>
+                                <p className="text-2xl font-black text-white">{envImpact?.coalSavedKg?.toLocaleString()} kg</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
                 </div>
             </div>
         </div>

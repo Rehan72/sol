@@ -26,6 +26,7 @@ export const ToastProvider = ({ children }) => {
   const value = {
     toasts,
     addToast,
+    showToast: addToast,
     removeToast,
   };
 

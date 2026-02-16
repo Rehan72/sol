@@ -7,6 +7,8 @@ import * as crypto from 'crypto';
 import { Payment } from '../entities/payment.entity';
 import { Quotation } from '../entities/quotation.entity';
 import { User } from '../entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../entities/notification.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -18,6 +20,7 @@ export class PaymentsService {
     @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
     @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    private notificationsService: NotificationsService,
   ) {
     const keyId = this.configService.get<string>('RAZORPAY_KEY_ID');
     const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
@@ -124,7 +127,19 @@ export class PaymentsService {
       isMock: data.isMock,
     });
     
-    return this.paymentRepo.save(payment);
+    
+    const savedPayment = await this.paymentRepo.save(payment);
+
+    // Send Notification
+    await this.notificationsService.send(
+      data.customerId,
+      'Payment Received! 💳',
+      `We have successfully received your payment of ₹${data.amount} for milestone ${data.milestoneId}.`,
+      NotificationType.SUCCESS,
+      [NotificationChannel.SYSTEM]
+    );
+
+    return savedPayment;
   }
 
   async getPaymentsByPlantAdmin(plantAdminId: string): Promise<Payment[]> {

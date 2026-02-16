@@ -224,6 +224,22 @@ function PlantList() {
               >
                 Manage Payments
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => navigate(`/monitoring/${plant.id}`)}
+                className="text-solar-yellow font-bold"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Live Monitor (PRO)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate(`/digital-twin/${plant.id}`)}
+                className="text-solar-yellow font-bold"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Digital Twin (ELITE)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/grid-plant/edit', { state: { plantId: plant.id } })}>Edit Plant</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

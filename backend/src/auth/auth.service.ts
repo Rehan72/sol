@@ -8,12 +8,16 @@ import { ConfigService } from '@nestjs/config';
 import { Role } from '../common/enums/role.enum';
 import { RegisterDto } from './dto/register.dto';
 
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../entities/notification.entity';
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
     private jwt: JwtService,
     private configService: ConfigService,
+    private notifications: NotificationsService,
   ) { }
 
   async login(email: string, password: string) {
@@ -95,6 +99,31 @@ export class AuthService {
       termAccepted: dto.termOfService,
     });
     await this.usersRepo.save(newCustomer);
+
+    // Send Welcome Notification
+    try {
+        await this.notifications.send(
+            newCustomer.id,
+            'Welcome to TekMindz! ☀️',
+            `Hi ${newCustomer.name}, welcome to your solar journey. Please complete your profile setup.`,
+            NotificationType.SUCCESS
+        );
+
+        // Notify Super Admins
+        const admins = await this.usersRepo.find({ where: { role: Role.SUPER_ADMIN } });
+        for (const admin of admins) {
+            await this.notifications.send(
+                admin.id,
+                'New Customer Registered 👤',
+                `A new customer ${newCustomer.name} (${newCustomer.email}) has registered.`,
+                NotificationType.INFO,
+                [NotificationChannel.SYSTEM]
+            );
+        }
+
+    } catch (e) {
+        console.error('Failed to send welcome/admin notification', e);
+    }
 
     return {
       name: newCustomer.name,

@@ -16,6 +16,16 @@ import { QuotationsModule } from './quotations/quotations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { CostEstimationModule } from './cost-estimation/cost-estimation.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { PricingModule } from './pricing/pricing.module';
+import { FinancialsModule } from './financials/financials.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { IotModule } from './iot/iot.module';
+import { ControlModule } from './control/control.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
     imports: [
@@ -49,6 +59,17 @@ import { CostEstimationModule } from './cost-estimation/cost-estimation.module';
         PaymentsModule,
         TicketsModule,
         CostEstimationModule,
+        NotificationsModule,
+        InventoryModule,
+        PricingModule,
+        FinancialsModule,
+        PortfolioModule,
+        PortfolioModule,
+        MonitoringModule,
+        SubscriptionModule,
+        IotModule,
+        ControlModule,
+        EventEmitterModule.forRoot(),
     ],
 })
 export class AppModule { }

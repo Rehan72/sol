@@ -23,4 +23,32 @@ export class AuditController {
     ) {
         return this.auditService.findAll(phase, action);
     }
+
+    @Get('discom-report')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.REGION_ADMIN)
+    async getDiscomReport() {
+        return this.auditService.getDiscomComplianceReport();
+    }
+
+    @Get('subsidy-report')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.REGION_ADMIN)
+    async getSubsidyReport() {
+        return this.auditService.getSubsidyReport();
+    }
+
+    @Get('expiring-documents')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.REGION_ADMIN, Role.PLANT_ADMIN)
+    async getExpiringDocuments() {
+        return this.auditService.getExpiringDocuments();
+    }
+
+    @Get('esg-report')
+    @UseGuards(AccessTokenGuard, RolesGuard)
+    @Roles(Role.SUPER_ADMIN, Role.REGION_ADMIN)
+    async getESGReport() {
+        return this.auditService.getAdvancedESGReport();
+    }
 }

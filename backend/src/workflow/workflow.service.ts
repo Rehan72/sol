@@ -5,6 +5,8 @@ import { WorkflowStep } from '../entities/workflow-step.entity';
 import { User } from '../entities/user.entity';
 import { Payment } from '../entities/payment.entity';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../entities/notification.entity';
 
 @Injectable()
 export class WorkflowService {
@@ -15,7 +17,8 @@ export class WorkflowService {
         private userRepo: Repository<User>,
         @InjectRepository(Payment)
         private paymentRepo: Repository<Payment>,
-        private auditService: AuditService
+        private auditService: AuditService,
+        private notificationsService: NotificationsService
     ) { }
 
     async initializeWorkflow(customerId: string, adminId: string) {
@@ -210,6 +213,23 @@ export class WorkflowService {
                     user.installationStatus = 'COMPLETED';
                 }
                 await this.userRepo.save(user);
+
+                // Send Notification
+                const phaseMessages = {
+                    'INSTALLATION': { title: 'Installation Started! 🛠️', msg: 'Your solar installation phase has officially begun. Our team is on it!' },
+                    'COMMISSIONING': { title: 'Commissioning Phase! ⚡', msg: 'Installation is complete. We are now testing and synchronizing your system with the grid.' },
+                    'LIVE': { title: 'Congratulations! You are LIVE! 🌞', msg: 'Your solar plant is now fully operational and generating green energy.' }
+                };
+
+                if (phaseMessages[nextPhase]) {
+                    await this.notificationsService.send(
+                        customerId,
+                        phaseMessages[nextPhase].title,
+                        phaseMessages[nextPhase].msg,
+                        NotificationType.SUCCESS,
+                        [NotificationChannel.SYSTEM]
+                    );
+                }
             }
         } catch (error) {
             console.error('Failed to update user status during phase advancement:', error);

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CostEstimation } from '../entities/cost-estimation.entity';
 import { Survey } from '../entities/survey.entity';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class CostEstimationService {
@@ -11,6 +12,7 @@ export class CostEstimationService {
         private readonly repo: Repository<CostEstimation>,
         @InjectRepository(Survey)
         private readonly surveyRepo: Repository<Survey>,
+        private readonly pricingService: PricingService,
     ) {}
 
     async create(dto: any, userId?: number): Promise<CostEstimation> {
@@ -73,110 +75,17 @@ export class CostEstimationService {
     }
 
     async generateFromSurvey(surveyId: number, userId?: number): Promise<CostEstimation> {
-        const survey = await this.surveyRepo.findOne({ where: { id: surveyId } });
-        if (!survey) throw new NotFoundException('Survey not found');
-
-        // 1. Calculate Recommended System Size
-        // Assumption: 1 kW generates ~120 units/month
-        let recommendedKw = 0;
-        if (survey.averageMonthlyConsumption) {
-            recommendedKw = Number((survey.averageMonthlyConsumption / 120).toFixed(2));
-        } else if (survey.sanctionedLoad) {
-            recommendedKw = Number((survey.sanctionedLoad * 0.8).toFixed(2)); // 80% of sanctioned load
-        }
+        // Delegate core generation to Pricing Engine
+        const estimation = await this.pricingService.generateEstimationFromSurvey(surveyId);
         
-        // Adjust for shadow-free area (approx 10 sq.m per kW)
-        if (survey.shadowFreeUsableArea) {
-            const maxCapacityByArea = Number((survey.shadowFreeUsableArea / 10).toFixed(2));
-            recommendedKw = Math.min(recommendedKw, maxCapacityByArea);
-        }
-
-        recommendedKw = Math.max(recommendedKw, 1); // Minimum 1 kW
-
-        // 2. Base Rates (Mock Rates - in INR)
-        const RATE_PANEL = 22000; // per kW
-        const RATE_INVERTER = 12000; // per kW
-        const RATE_STRUCTURE = survey.roofType === 'RCC' ? 4000 : 5500; // per kW (Metal/Tile might be higher/lower depending on structure)
-        const RATE_INSTALLATION = 3000; // per kW
+        // Additional metadata if needed
+        if (userId) estimation.createdById = userId;
         
-        // Cable Cost (DC + AC)
-        const cableDist = (survey.distanceRoofToDB || 20) + (survey.cableRouteLength || 10);
-        const cableEstCost = cableDist * 150; // approx 150 per meter for combo of cables
-
-        // 3. Populate Stages
-        const est = new CostEstimation();
-        est.surveyId = survey.id;
-        est.projectName = `Solar Project for ${survey.customerName || 'Customer'}`;
-        est.systemCapacity = recommendedKw;
-        est.plantType = survey.siteType || 'Rooftop';
-        
-        est.stagePanels = [{
-            item: `Solar Modules (${Math.ceil(recommendedKw * 1000 / 550)} x 550Wp)`,
-            qty: recommendedKw,
-            unit: 'kW',
-            rate: RATE_PANEL,
-            amount: recommendedKw * RATE_PANEL
-        }];
-
-        est.stageInverter = [{
-            item: `Grid Tie Inverter`,
-            qty: recommendedKw,
-            unit: 'kW',
-            rate: RATE_INVERTER,
-            amount: recommendedKw * RATE_INVERTER
-        }];
-
-        est.stageMounting = [{
-            item: `Mounting Structure (${survey.roofType || 'Standard'})`,
-            qty: recommendedKw,
-            unit: 'kW',
-            rate: RATE_STRUCTURE,
-            amount: recommendedKw * RATE_STRUCTURE
-        }];
-        
-        est.stageDcElectrical = [{
-            item: 'DC Cables & Consumables',
-            qty: 1,
-            unit: 'Lot',
-            rate: cableEstCost * 0.4, // 40% of cable budget for DC
-            amount: cableEstCost * 0.4
-        }];
-
-        est.stageGridConnection = [{
-            item: 'AC Cables & Grid Interfacing',
-            qty: 1,
-            unit: 'Lot',
-            rate: cableEstCost * 0.6,
-            amount: cableEstCost * 0.6
-        }];
-
-        est.stageLabour = [{
-            item: 'Installation & Commissioning',
-            qty: recommendedKw,
-            unit: 'kW',
-            rate: RATE_INSTALLATION,
-            amount: recommendedKw * RATE_INSTALLATION
-        }];
-        
-        if (survey.earthingAvailable === false) {
-             est.stageEarthing = [{
-                item: 'Earthing & Lightning Protection Kit',
-                qty: 1,
-                unit: 'Set',
-                rate: 15000,
-                amount: 15000
-            }];
-        }
-
-        est.createdById = userId;
-
-        this.calculateTotals(est);
-
-        // Auto-generate number
+        // Auto-generate number with correct prefix
         const count = await this.repo.count();
-        est.estimationNumber = `EST-${String(count + 1).padStart(4, '0')}`;
+        estimation.estimationNumber = `EST-${String(count).padStart(4, '0')}`;
         
-        return this.repo.save(est);
+        return await this.repo.save(estimation);
     }
 
     async linkToQuotation(id: number, quotationId: number): Promise<void> {

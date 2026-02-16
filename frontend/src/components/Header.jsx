@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Bell, Menu, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import client from '../api/client';
 import { logout } from '../api/auth';
 import { motion } from 'framer-motion';
 import RealisticSun from './ui/RealisticSun';
@@ -12,6 +13,34 @@ import { useAuthStore } from '../store/authStore';
 function Header({ sidebarOpen, setSidebarOpen }) {
   const navigate = useNavigate();
   const { user, role } = useAuthStore();
+  const [notifications, setNotifications] = React.useState([]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await client.get('/notifications?unreadOnly=false&limit=5'); // Fetch recent 5
+      setNotifications(res.data.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to fetch header notifications', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchNotifications();
+    // Poll every 30s to keep header updated
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const markAsRead = async (id) => {
+      try {
+          await client.put(`/notifications/${id}/read`);
+          setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      } catch (error) {
+          console.error('Failed to mark as read', error);
+      }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = async () => {
     await logout();
@@ -63,16 +92,72 @@ function Header({ sidebarOpen, setSidebarOpen }) {
       {/* Right Actions */}
       <div className="flex items-center gap-2 md:gap-4">
         {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="relative p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group h-auto w-auto"
-        >
-          <Bell className="w-5 h-5 text-solar-yellow/60 group-hover:text-solar-yellow transition-colors" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-solar-yellow rounded-full shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
-        </Button>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group h-auto w-auto"
+            >
+              <Bell className="w-5 h-5 text-solar-yellow/60 group-hover:text-solar-yellow transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-solar-yellow rounded-full border-2 border-deep-navy shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+              )}
+            </Button>
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              className="min-w-[320px] max-w-[400px] glass-dark border border-white/10 rounded-[2.5rem] p-4 shadow-2xl backdrop-blur-3xl z-50 animate-in fade-in zoom-in-95 duration-200"
+              sideOffset={8}
+            >
+              <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 mb-4">
+                <h3 className="text-[10px] font-black tracking-widest uppercase">Alerts & Transmissions</h3>
+                {unreadCount > 0 && <span className="text-[8px] font-black bg-solar-yellow text-black px-2 py-0.5 rounded-full">{unreadCount} NEW</span>}
+              </div>
+
+              <div className="space-y-2 max-h-[400px] overflow-y-auto no-scrollbar">
+                {notifications.length === 0 ? (
+                    <div className="p-4 text-center">
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">No notifications</p>
+                    </div>
+                ) : (
+                    notifications.map((notif) => (
+                  <DropdownMenu.Item 
+                    key={notif.id}
+                    className="flex flex-col gap-1 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer outline-none border border-transparent hover:border-white/10 group"
+                    onClick={() => {
+                        markAsRead(notif.id);
+                        navigate('/notifications');
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                       <span className={`text-[10px] font-black tracking-tight ${notif.isRead ? 'text-white/60' : 'text-solar-yellow'}`}>{notif.title}</span>
+                       <span className="text-[8px] font-bold text-white/20 uppercase">
+                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       </span>
+                    </div>
+                    <p className="text-xs text-white/40 leading-relaxed font-medium group-hover:text-white/60 transition-colors line-clamp-2">
+                       {notif.message}
+                    </p>
+                  </DropdownMenu.Item>
+                )))}
+              </div>
+
+              <div className="mt-4 pt-2 border-t border-white/5">
+                <button 
+                    onClick={() => navigate('/notifications')}
+                    className="w-full py-3 rounded-2xl text-[9px] font-black tracking-[0.2em] uppercase text-white/40 hover:text-solar-yellow transition-colors"
+                >
+                  View Full Feed
+                </button>
+              </div>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
 
         <div className="h-10 w-px bg-white/5 mx-2 hidden sm:block" />
 

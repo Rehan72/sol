@@ -8,6 +8,9 @@ import { CostEstimationService } from '../cost-estimation/cost-estimation.servic
 import { Role } from '../common/enums/role.enum';
 import puppeteer from 'puppeteer';
 
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../entities/notification.entity';
+
 @Injectable()
 export class QuotationsService {
     constructor(
@@ -18,6 +21,7 @@ export class QuotationsService {
         @InjectRepository(QuotationApproval)
         private approvalRepository: Repository<QuotationApproval>,
         private costEstimationService: CostEstimationService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async create(createQuotationDto: any) {
@@ -133,6 +137,22 @@ export class QuotationsService {
 
         await this.quotationRepository.save(quotation);
         await this.logApproval(id, 'FINAL_APPROVED', user, 'Final Approval Granted');
+
+        // Notify Customer
+        if (quotation.survey && (quotation.survey.customerId || quotation.survey.customerEmail)) {
+             // We need to resolve customerId if it's missing but we have survey
+             // But usually survey has customerId.
+             const customerId = quotation.survey.customerId;
+             if (customerId) {
+                 await this.notificationsService.send(
+                    customerId,
+                    'Quotation Approved 📜',
+                    `Your solar quotation #${quotation.quotationNumber} has been finalized and approved.`,
+                    NotificationType.SUCCESS
+                );
+             }
+        }
+
         return quotation;
     }
 

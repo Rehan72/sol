@@ -44,6 +44,15 @@ import ServiceManagement from "../pages/admin/ServiceManagement";
 import CostEstimationList from "../pages/costEstimation/CostEstimationList";
 import CostEstimationTemplate from "../pages/costEstimation/CostEstimationTemplate";
 import CostEstimationView from "../pages/costEstimation/CostEstimationView";
+import ComplianceDashboard from "../pages/audit/ComplianceDashboard";
+import InventoryDashboard from "../pages/inventory/InventoryDashboard";
+import WarehouseList from "../pages/inventory/WarehouseList";
+import PricingSettings from "../pages/admin/PricingSettings";
+import PortfolioDashboard from "../pages/admin/PortfolioDashboard";
+import LiveMonitor from "../pages/monitoring/LiveMonitor";
+import SolarPlant3D from "../components/Three/SolarPlant3D";
+import SubscriptionPlans from "../pages/subscription/SubscriptionPlans";
+import Notifications from "../pages/notifications/Notifications";
 
 export const routeParams = "management";
 
@@ -202,6 +211,21 @@ export default [
     exact: true
   },
   {
+    element: SolarPlant3D,
+    path: `digital-twin/:plantId`,
+    exact: true
+  },
+  {
+    element: LiveMonitor,
+    path: `monitoring/:plantId`,
+    exact: true
+  },
+  {
+    element: SubscriptionPlans,
+    path: `subscription/plans`,
+    exact: true
+  },
+  {
     element: SolarRequests,
     path: `admin/leads`,
     exact: true
@@ -309,6 +333,36 @@ export default [
   {
     element: CostEstimationView,
     path: `cost-estimation/:id`,
+    exact: true
+  },
+  {
+    element: ComplianceDashboard,
+    path: `compliance`,
+    exact: true
+  },
+  {
+    element: InventoryDashboard,
+    path: `inventory`,
+    exact: true
+  },
+  {
+    element: WarehouseList,
+    path: `inventory/warehouses`,
+    exact: true
+  },
+  {
+    element: PricingSettings,
+    path: `/pricing`,
+    exact: true
+  },
+  {
+    element: PortfolioDashboard,
+    path: `analytics`,
+    exact: true
+  },
+  {
+    element: Notifications,
+    path: `notifications`,
     exact: true
   }
 ]

@@ -10,6 +10,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { AssignTeamDto } from './dto/assign-team.dto';
 import { UploadReportDto } from './dto/upload-report.dto';
 import { Role } from '../common/enums/role.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../entities/notification.entity';
 
 @Injectable()
 export class TicketsService {
@@ -19,6 +21,7 @@ export class TicketsService {
         @InjectRepository(Quotation) private quotationRepo: Repository<Quotation>,
         @InjectRepository(Team) private teamRepo: Repository<Team>,
         @InjectRepository(User) private userRepo: Repository<User>,
+        private notifications: NotificationsService,
     ) { }
 
     async create(dto: CreateTicketDto, user: User) {
@@ -34,7 +37,21 @@ export class TicketsService {
             status: 'OPEN',
         });
 
-        return this.ticketRepo.save(ticket);
+        const savedTicket = await this.ticketRepo.save(ticket);
+
+        // Notify User
+        try {
+            await this.notifications.send(
+                user.id,
+                'Ticket Created',
+                `Your ticket #${savedTicket.ticketNumber} has been created.`,
+                NotificationType.INFO
+            );
+        } catch (e) {
+            console.error('Failed to send notification for ticket creation', e);
+        }
+
+        return savedTicket;
     }
 
     async findAll(user: User) {
@@ -135,6 +152,41 @@ export class TicketsService {
     async complete(id: string) {
         const ticket = await this.findOne(id);
         ticket.status = 'COMPLETED';
+        const savedTicket = await this.ticketRepo.save(ticket);
+        
+        // Notify User
+        try {
+            await this.notifications.send(
+                ticket.customerId,
+                'Ticket Completed',
+                `Your ticket #${ticket.ticketNumber} has been marked as completed.`,
+                NotificationType.SUCCESS
+            );
+        } catch (e) {
+            console.error('Failed to send notification for ticket completion', e);
+        }
+
+        return savedTicket;
+    }
+
+    async createAutoTicket(customerId: string, description: string) {
+        // Automatically creates a maintenance ticket on system alerts/anomalies
+        const user = await this.userRepo.findOne({ where: { id: customerId } });
+        if (!user) return null;
+
+        const ticketCount = await this.ticketRepo.count();
+        const ticketNumber = `AUTO-${(ticketCount + 1).toString().padStart(5, '0')}`;
+
+        const ticket = this.ticketRepo.create({
+            ticketNumber,
+            description,
+            customerId,
+            plant: user.plant,
+            region: user.region,
+            status: 'OPEN',
+            notes: 'SYSTEM GENERATED TICKET'
+        } as any);
+
         return this.ticketRepo.save(ticket);
     }
 }

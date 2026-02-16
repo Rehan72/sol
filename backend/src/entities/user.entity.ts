@@ -114,6 +114,22 @@ export class User {
   @Column({ nullable: true })
   installationStartDate: Date;
 
+  // Compliance & Subsidy Fields
+  @Column({ default: 'NOT_STARTED' })
+  discomApplicationStatus: string;
+
+  @Column({ nullable: true })
+  discomNumber: string;
+
+  @Column({ default: 'NOT_ELIGIBLE' })
+  subsidyStatus: string;
+
+  @Column({ type: 'float', nullable: true })
+  subsidyAmount: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  documentExpiries: Record<string, Date>;
+
   // Employee specific fields
   @Column({ nullable: true })
   designation: string; // e.g., 'Surveyor', 'Installer'
@@ -123,6 +139,13 @@ export class User {
 
   @Column({ type: 'jsonb', nullable: true })
   documents: string[]; // Array of file paths/URLs
+
+  // Subscription Details (Phase 3)
+  @Column({ default: 'BASIC' })
+  subscriptionTier: string; // BASIC, PRO, ELITE
+
+  @Column({ nullable: true })
+  subscriptionEndDate: Date;
 
   @CreateDateColumn()
   createdAt: Date;

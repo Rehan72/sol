@@ -11,6 +11,7 @@ import EventAuditor from "./components/debug/EventAuditor";
 import { ToastProvider } from "./context/ToastContext";
 import { LoadingProvider } from "./context/LoadingContext";
 import GlobalLoader from "./components/ui/GlobalLoader";
+import NotificationManager from './components/Layout/NotificationManager';
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +20,7 @@ const App = () => {
     <ToastProvider>
       <LoadingProvider>
         <div className="bg-deep-navy min-h-screen text-white">
+          <NotificationManager />
           <EventAuditor />
           <GlobalLoader />
           <AnimatePresence mode="wait">
