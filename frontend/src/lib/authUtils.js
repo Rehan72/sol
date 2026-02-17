@@ -6,6 +6,8 @@ export const getRedirectPath = (role) => {
       return '/region-admin-dashboard';
     case 'PLANT_ADMIN':
       return '/plant-admin-dashboard';
+    case 'PLANTS':
+      return '/dashboard'; // Or a specific dashboard for GridPlant if one exists? Defaulting to main dashboard as allowed by route
     case 'INSTALLATION_TEAM':
       return '/installation-workflow';
     case 'CUSTOMER':

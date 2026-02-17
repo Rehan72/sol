@@ -212,4 +212,9 @@ export class CreatePlantDto {
     @IsNumber()
     @IsOptional()
     efficiency?: number;
+
+    @ApiProperty({ example: 'password123', required: false })
+    @IsString()
+    @IsOptional()
+    password?: string;
 }

@@ -29,12 +29,48 @@ export class SeedService implements OnModuleInit {
   async onModuleInit() {
     // Seed service disabled - uncomment to enable
     await this.createSuperAdmin();
+    // await this.createGridPlantUser();
     // await this.seedPlants();
     // await this.seedTeams();
     // await this.seedCustomers();
     // await this.seedQuotations();
     // await this.seedTickets();
     // await this.seedTelemetry();
+  }
+
+  private async createGridPlantUser() {
+    const email = 'anik@gmail.com';
+    const password = 'Anik@123';
+
+    // Check if user exists
+    const exists = await this.userRepo.findOne({ where: { email } });
+    if (exists) {
+        // console.log('✅ GridPlant user already exists');
+        return;
+    }
+
+    // Find a plant to associate
+    const plant = await this.plantRepo.findOne({ order: { createdAt: 'ASC' } });
+    if (!plant) {
+        this.logger.warn('⚠️ No plants found to associate with GridPlant user. Seeding plants first...');
+        await this.seedPlants();
+        return this.createGridPlantUser(); // Retry
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = this.userRepo.create({
+        name: 'Anik Grid Owner',
+        email,
+        password: hashedPassword,
+        phone: '+919876543210',
+        role: Role.PLANTS, 
+        plant: { id: plant.id },
+        isOnboarded: true
+    });
+
+    await this.userRepo.save(user);
+    this.logger.log(`🚀 GridPlant user '${email}' created for plant '${plant.plantName}'`);
   }
 
   private async createSuperAdmin() {

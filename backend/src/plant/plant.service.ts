@@ -1,20 +1,55 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plant } from '../entities/plant.entity';
+import { User } from '../entities/user.entity';
 import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
+import * as bcrypt from 'bcrypt';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class PlantService {
+    private readonly logger = new Logger(PlantService.name);
+
     constructor(
         @InjectRepository(Plant)
         private plantRepository: Repository<Plant>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
     ) { }
 
     async create(createPlantDto: CreatePlantDto): Promise<Plant> {
         const plant = this.plantRepository.create(createPlantDto);
-        return await this.plantRepository.save(plant);
+        const savedPlant = await this.plantRepository.save(plant);
+
+        // Create user for Plant Owner/GridPlant if password is provided
+        if (createPlantDto.password && createPlantDto.ownerEmail) {
+            try {
+                const existingUser = await this.userRepository.findOne({ where: { email: createPlantDto.ownerEmail } });
+                if (!existingUser) {
+                    const hashedPassword = await bcrypt.hash(createPlantDto.password, 10);
+                    const newUser = this.userRepository.create({
+                        name: createPlantDto.ownerName,
+                        email: createPlantDto.ownerEmail,
+                        password: hashedPassword,
+                        phone: createPlantDto.ownerPhone,
+                        role: Role.PLANTS, // Assuming PLANTS role for GridPlant owner
+                        plant: { id: savedPlant.id },
+                        isOnboarded: true
+                    });
+                    await this.userRepository.save(newUser);
+                    this.logger.log(`Created user for plant owner: ${createPlantDto.ownerEmail}`);
+                } else {
+                    this.logger.warn(`User ${createPlantDto.ownerEmail} already exists, skipping creation.`);
+                }
+            } catch (error) {
+                this.logger.error(`Failed to create user for plant owner: ${error.message}`, error.stack);
+                // Non-blocking error, plant is already created
+            }
+        }
+
+        return savedPlant;
     }
 
     async findAll(): Promise<Plant[]> {
