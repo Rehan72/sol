@@ -46,6 +46,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { category: 'overview', name: 'DASHBOARD', icon: LayoutDashboard, path: '/employee-dashboard', allowedRoles: ['EMPLOYEE'] },
     { category: 'overview', name: 'DASHBOARD', icon: LayoutDashboard, path: '/plant-admin-dashboard', allowedRoles: ['PLANT_ADMIN'] },
     { category: 'overview', name: 'DASHBOARD', icon: LayoutDashboard, path: '/customer/dashboard', allowedRoles: ['CUSTOMER'] },
+    { category: 'overview', name: 'DASHBOARD', icon: LayoutDashboard, path: '/region-admin-dashboard', allowedRoles: ['REGION_ADMIN'] },
     { category: 'overview', name: 'NOTIFICATIONS', icon: Bell, path: '/notifications', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN', 'EMPLOYEE', 'CUSTOMER', 'INSTALLATION_TEAM', 'SURVEY_TEAM', 'MAINTENANCE_TEAM'] },
     { category: 'overview', name: 'ANALYTICS', icon: BarChart3, path: '/analytics', allowedRoles: ['SUPER_ADMIN', 'REGION_ADMIN', 'PLANT_ADMIN'] },
 

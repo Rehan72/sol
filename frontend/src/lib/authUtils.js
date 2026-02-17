@@ -3,7 +3,7 @@ export const getRedirectPath = (role) => {
     case 'SUPER_ADMIN':
       return '/dashboard';
     case 'REGION_ADMIN':
-      return '/grid-plant';
+      return '/region-admin-dashboard';
     case 'PLANT_ADMIN':
       return '/plant-admin-dashboard';
     case 'INSTALLATION_TEAM':

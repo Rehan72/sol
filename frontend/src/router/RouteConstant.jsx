@@ -53,6 +53,7 @@ import LiveMonitor from "../pages/monitoring/LiveMonitor";
 import SolarPlant3D from "../components/Three/SolarPlant3D";
 import SubscriptionPlans from "../pages/subscription/SubscriptionPlans";
 import Notifications from "../pages/notifications/Notifications";
+import RegionAdminDashboard from "../pages/regionAdmin/RegionAdminDashboard";
 
 export const routeParams = "management";
 
@@ -363,6 +364,11 @@ export default [
   {
     element: Notifications,
     path: `notifications`,
+    exact: true
+  },
+  {
+    element: RegionAdminDashboard,
+    path: `region-admin-dashboard`,
     exact: true
   }
 ]
