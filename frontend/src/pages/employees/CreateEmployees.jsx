@@ -16,12 +16,15 @@ import {
     Activity,
     FileBadge,
     Plus,
-    X
+    X,
+    Building2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Select from '../../components/ui/Select';
 import EmployeeService from '../../services/EmployeeService';
 import { useToast } from '../../hooks/useToast';
+import { useAuthStore } from '../../store/authStore';
+import { getAllPlants } from '../../api/plant';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { employeeSchema, defaultValues } from '../../schemas/employeeSchema';
@@ -51,7 +54,24 @@ function CreateEmployees() {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [plants, setPlants] = useState([]);
     const { addToast } = useToast();
+    const { user } = useAuthStore();
+
+    useEffect(() => {
+        if (user?.role === 'SUPER_ADMIN' || user?.role === 'superadmin') {
+            const fetchPlants = async () => {
+                try {
+                    const data = await getAllPlants();
+                    setPlants(data.map(p => ({ value: p.id, label: p.plantName })));
+                } catch (error) {
+                    console.error("Failed to fetch plants", error);
+                    addToast("Failed to load plants", "error");
+                }
+            };
+            fetchPlants();
+        }
+    }, [user, addToast]);
 
     useEffect(() => {
         if (employeeId) {
@@ -71,6 +91,7 @@ function CreateEmployees() {
                 designation: employee.designation || '',
                 teamName: employee.teamName || '',
                 status: employee.status || 'active',
+                plantId: employee.plant?.id || '',
             });
         } catch (error) {
             console.error('Error fetching employee:', error);
@@ -212,7 +233,30 @@ function CreateEmployees() {
                                     )}
                                 />
                             </div>
+
                         </FormField>
+
+                        {/* Plant Selection for Super Admin */}
+                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'superadmin') && (
+                            <div className="relative">
+                                <Controller
+                                    name="plantId"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            name="plantId"
+                                            label="Assign Plant"
+                                            value={field.value}
+                                            onChange={(e) => field.onChange(e.target.value)}
+                                            options={plants}
+                                            icon={Building2}
+                                            placeholder="Select Plant"
+                                            error={errors.plantId?.message}
+                                        />
+                                    )}
+                                />
+                            </div>
+                        )}
 
                         <div className="relative">
                             <Controller

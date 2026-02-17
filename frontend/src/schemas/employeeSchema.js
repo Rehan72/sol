@@ -9,6 +9,7 @@ export const employeeSchema = z.object({
     teamName: z.string().optional(),
     documents: z.array(z.string()).optional(),
     status: z.enum(['active', 'inactive']).default('active'),
+    plantId: z.string().optional(), // For SUPER_ADMIN to assign plant
 });
 
 export const defaultValues = {

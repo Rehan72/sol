@@ -27,13 +27,14 @@ export class SeedService implements OnModuleInit {
   ) { }
 
   async onModuleInit() {
+    // Seed service disabled - uncomment to enable
     await this.createSuperAdmin();
-    await this.seedPlants();
-    await this.seedTeams();
-    await this.seedCustomers();
-    await this.seedQuotations();
-    await this.seedTickets();
-    await this.seedTelemetry();
+    // await this.seedPlants();
+    // await this.seedTeams();
+    // await this.seedCustomers();
+    // await this.seedQuotations();
+    // await this.seedTickets();
+    // await this.seedTelemetry();
   }
 
   private async createSuperAdmin() {
@@ -67,21 +68,29 @@ export class SeedService implements OnModuleInit {
     if (count > 0) return;
 
     const plants = [
-      { name: 'Solaris Alpha', location: 'Mumbai, MH', capacity: 1200, lat: 19.0760, lng: 72.8777 },
-      { name: 'Helios One', location: 'Pune, MH', capacity: 850, lat: 18.5204, lng: 73.8567 },
-      { name: 'RayGuard Plant', location: 'Bangalore, KA', capacity: 2100, lat: 12.9716, lng: 77.5946 },
-      { name: 'Photon Valley', location: 'Hyderabad, TS', capacity: 1500, lat: 17.3850, lng: 78.4867 },
-      { name: 'SunStrike Facility', location: 'Chennai, TN', capacity: 3200, lat: 13.0827, lng: 80.2707 },
+      { name: 'Solaris Alpha', code: 'SOL-ALPHA-001', location: 'Mumbai, MH', capacity: 1200, lat: 19.0760, lng: 72.8777 },
+      { name: 'Helios One', code: 'HEL-ONE-001', location: 'Pune, MH', capacity: 850, lat: 18.5204, lng: 73.8567 },
+      { name: 'RayGuard Plant', code: 'RAY-PLT-001', location: 'Bangalore, KA', capacity: 2100, lat: 12.9716, lng: 77.5946 },
+      { name: 'Photon Valley', code: 'PHV-VAL-001', location: 'Hyderabad, TS', capacity: 1500, lat: 17.3850, lng: 78.4867 },
+      { name: 'SunStrike Facility', code: 'SUN-STR-001', location: 'Chennai, TN', capacity: 3200, lat: 13.0827, lng: 80.2707 },
     ];
 
     for (const p of plants) {
       await this.plantRepo.save(this.plantRepo.create({
         plantName: p.name,
+        plantCode: p.code,
         location: p.location,
         capacity: p.capacity,
         latitude: p.lat,
         longitude: p.lng,
-        status: 'active'
+        status: 'active',
+        plantType: 'grid_connected',
+        country: 'India',
+        state: p.location.split(', ')[1],
+        city: p.location.split(', ')[0],
+        ownerName: 'Solar Owner',
+        ownerPhone: '+91-9876543210',
+        ownerEmail: 'owner@solar.com'
       }));
     }
     this.logger.log(`🌱 Seeded ${plants.length} plants`);
